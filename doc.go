@@ -2,4 +2,4 @@
 // code is governed by a license that can be found in the License file.
 
 // Package sio provides support for audio capture and playback.
-package sio
+package sio /* import "zikichombo.org/sound/sio" */
