@@ -3,11 +3,11 @@
 
 package sio
 
-import "github.com/irifrance/snd"
+import "zikichombo.org/sound"
 
 type Duplex interface {
-	snd.Form
-	snd.Closer
+	sound.Form
+	sound.Closer
 	InChannels() int
 	OutChannels() int
 

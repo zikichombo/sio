@@ -6,12 +6,12 @@ package sio
 import (
 	"fmt"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/freq"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/freq"
+	"zikichombo.org/sound/sample"
 )
 
-// Dev provides data about an snd device to connect to
+// Dev provides data about an sound device to connect to
 // for input or output.
 type Dev struct {
 	Id             uint64
@@ -49,7 +49,7 @@ func (d *Dev) SupportsCodec(c sample.Codec) bool {
 	return false
 }
 
-func (d *Dev) CanOutputForm(v snd.Form) bool {
+func (d *Dev) CanOutputForm(v sound.Form) bool {
 	nC := v.Channels()
 	if nC > d.MaxOutChannels {
 		return false
@@ -61,7 +61,7 @@ func (d *Dev) CanOutputForm(v snd.Form) bool {
 	return true
 }
 
-func (d *Dev) CanInputForm(v snd.Form) bool {
+func (d *Dev) CanInputForm(v sound.Form) bool {
 	nC := v.Channels()
 	if nC > d.MaxOutChannels {
 		return false
@@ -97,7 +97,7 @@ var DefaultInputDev *Dev
 var DefaultOutputDev *Dev
 
 // Default sampling rate + number of channels (Form)
-var DefaultForm snd.Form
+var DefaultForm sound.Form
 
 // Default Sample codec
 var DefaultCodec sample.Codec

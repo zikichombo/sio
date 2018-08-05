@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/encoding/wav"
-	"github.com/irifrance/snd/ops"
-	"github.com/irifrance/snd/sample"
-	"github.com/irifrance/snd/sio"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/codec/wav"
+	"zikichombo.org/sound/ops"
+	"zikichombo.org/sound/sample"
+	"zikichombo.org/sound/sio"
 )
 
 func TestDarwinIn(t *testing.T) {
-	v := snd.StereoCd()
+	v := sound.StereoCd()
 	q, e := sio.DefaultInputDev.Input(v, sample.SFloat32L, 128)
 	if e != nil {
 		t.Fatal(e)

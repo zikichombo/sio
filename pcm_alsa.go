@@ -14,9 +14,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/freq"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/freq"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -lasound
@@ -25,7 +25,7 @@ import (
 import "C"
 
 type alsaPcm struct {
-	snd.Form
+	sound.Form
 	codec      sample.Codec
 	name       string
 	pcm        *C.snd_pcm_t
@@ -43,14 +43,14 @@ type alsaPcm struct {
 	periods    int
 }
 
-func newAlsaPcmIn(name string, v snd.Form, sc sample.Codec, nf int) *alsaPcm {
+func newAlsaPcmIn(name string, v sound.Form, sc sample.Codec, nf int) *alsaPcm {
 	res := newAlsaPcm(name, v, sc, nf)
 	res.dir = C.SND_PCM_STREAM_CAPTURE
 	res.pktC[0] = make(chan *Packet, 1)
 	return res
 }
 
-func newAlsaPcmOut(name string, v snd.Form, sc sample.Codec, nf int) *alsaPcm {
+func newAlsaPcmOut(name string, v sound.Form, sc sample.Codec, nf int) *alsaPcm {
 	res := newAlsaPcm(name, v, sc, nf)
 	res.dir = C.SND_PCM_STREAM_PLAYBACK
 	res.pktC[0] = make(chan *Packet, 1)
@@ -58,7 +58,7 @@ func newAlsaPcmOut(name string, v snd.Form, sc sample.Codec, nf int) *alsaPcm {
 	return res
 }
 
-func newAlsaPcm(name string, v snd.Form, sc sample.Codec, nf int) *alsaPcm {
+func newAlsaPcm(name string, v sound.Form, sc sample.Codec, nf int) *alsaPcm {
 	res := &alsaPcm{
 		Form:  v,
 		codec: sc,

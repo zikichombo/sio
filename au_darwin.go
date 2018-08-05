@@ -12,8 +12,8 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework CoreServices -framework CoreAudio -framework AudioToolbox
@@ -30,7 +30,7 @@ type auhal struct {
 	u     C.AudioUnit
 	dev   *Dev
 	iom   IoMode
-	form  snd.Form
+	form  sound.Form
 	codec sample.Codec
 	bufSz int
 }
@@ -38,7 +38,7 @@ type auhal struct {
 type bus struct {
 }
 
-func newAuio(dev *Dev, iom IoMode, v snd.Form, co sample.Codec, bufSz int) (*auhal, error) {
+func newAuio(dev *Dev, iom IoMode, v sound.Form, co sample.Codec, bufSz int) (*auhal, error) {
 	if err := dev.SetSampleRate(v.SampleRate()); err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (u *auhal) setDev(dev *Dev) error {
 	return caStatus(st)
 }
 
-func (u *auhal) setFormats(v snd.Form, co sample.Codec) error {
+func (u *auhal) setFormats(v sound.Form, co sample.Codec) error {
 	var devFmt, appFmt C.AudioStreamBasicDescription
 	sz := C.uint(C.sizeof_AudioStreamBasicDescription)
 	initFormat(&appFmt, v, co)

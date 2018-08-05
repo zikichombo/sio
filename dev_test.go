@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sio"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sio"
 )
 
 func TestDevices(t *testing.T) {
@@ -21,7 +21,7 @@ func TestDevices(t *testing.T) {
 	for _, d := range devs {
 		fmt.Printf("testing %v\n", d)
 		for _, sc := range d.SampleCodecs {
-			for _, v := range []snd.Form{snd.MonoCd(), snd.StereoCd()} {
+			for _, v := range []sound.Form{sound.MonoCd(), sound.StereoCd()} {
 				i, ie := d.Input(v, sc, 256)
 				if ie != nil {
 					t.Errorf("device %s can't make input for %s, %s: %s\n", d, v, sc, ie)

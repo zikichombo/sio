@@ -9,9 +9,9 @@ package sio
 import (
 	"encoding/binary"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/freq"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/freq"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework AudioToolbox
@@ -19,7 +19,7 @@ import (
 // #include <CoreAudio/CoreAudioTypes.h>
 import "C"
 
-func initFormat(fmt *C.AudioStreamBasicDescription, v snd.Form, codec sample.Codec) {
+func initFormat(fmt *C.AudioStreamBasicDescription, v sound.Form, codec sample.Codec) {
 	nCh := C.UInt32(v.Channels())
 	fmt.mSampleRate = C.Float64(float64(v.SampleRate()) / float64(freq.Hertz))
 	fmt.mFormatID = C.kAudioFormatLinearPCM

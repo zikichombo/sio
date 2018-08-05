@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 func TestAlsaOpen(t *testing.T) {
 	for _, c := range []sample.Codec{sample.SInt16L} { //sample.Codecs {
-		for _, v := range []snd.Form{snd.StereoCd(), snd.MonoCd()} {
+		for _, v := range []sound.Form{sound.StereoCd(), sound.MonoCd()} {
 			in := newAlsaPcmIn("default", v, c, 256)
 			if err := in.open(); err != nil {
 				t.Error(err)

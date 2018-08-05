@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -lasound
@@ -30,7 +30,7 @@ func Devices() []*Dev {
 }
 
 // Input attempts to create and start an Input.
-func (d *Dev) Input(v snd.Form, co sample.Codec, n int) (Input, error) {
+func (d *Dev) Input(v sound.Form, co sample.Codec, n int) (Input, error) {
 	pcm := newAlsaPcmIn(d.Name, v, co, n)
 	if err := pcm.open(); err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (d *Dev) Input(v snd.Form, co sample.Codec, n int) (Input, error) {
 }
 
 // Output attempts to create and start an Output, such as to a speaker.
-func (d *Dev) Output(v snd.Form, co sample.Codec, n int) (Output, error) {
+func (d *Dev) Output(v sound.Form, co sample.Codec, n int) (Output, error) {
 	pcm := newAlsaPcmOut(d.Name, v, co, n)
 	if err := pcm.open(); err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func init() {
 		C.snd_pcm_close(pcm)
 	}
 	devices = devs[:j]
-	DefaultForm = snd.StereoCd()
+	DefaultForm = sound.StereoCd()
 	DefaultCodec = sample.SFloat32L
 	DefaultOutputBufferSize = 256
 	DefaultInputBufferSize = 256

@@ -11,18 +11,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/freq"
-	"github.com/irifrance/snd/gen"
-	"github.com/irifrance/snd/sample"
-	"github.com/irifrance/snd/sio"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/freq"
+	"zikichombo.org/sound/gen"
+	"zikichombo.org/sound/sample"
+	"zikichombo.org/sound/sio"
 )
 
 func TestAlsaOut(t *testing.T) {
 	key := 440 * freq.Hertz
 	//z := gen.Notes(key, (key*3)/2, (key*6)/5, 2*key)
 	z := gen.Sin(key)
-	q, e := sio.DefaultOutputDev.Output(snd.StereoCd(), sample.SFloat32L, 256)
+	q, e := sio.DefaultOutputDev.Output(sound.StereoCd(), sample.SFloat32L, 256)
 	if e != nil {
 		t.Fatal(e)
 	}

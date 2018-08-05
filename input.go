@@ -6,14 +6,14 @@ package sio
 import (
 	"io"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 // Interface Input encapsulates input from a device.
 type Input interface {
-	snd.Form
-	snd.Closer
+	sound.Form
+	sound.Closer
 
 	// C returns a channel from which buffers of samples can be received.  The
 	// sample buffers are interleaved.
@@ -29,7 +29,7 @@ type Input interface {
 // NewInput tries to open and start an input device.
 // v Gives the valve information, c the dataformat of individual samples,
 // and n the buffer size, in frames, of each packet.
-func NewInput(v snd.Form, c sample.Codec, n int) (Input, error) {
+func NewInput(v sound.Form, c sample.Codec, n int) (Input, error) {
 	return DefaultInputDev.Input(v, c, n)
 }
 
@@ -40,7 +40,7 @@ func DefaultInput() (Input, error) {
 	return NewInput(DefaultForm, DefaultCodec, DefaultInputBufferSize)
 }
 
-func Record() (snd.Source, error) {
+func Record() (sound.Source, error) {
 	i, e := DefaultInput()
 	if e != nil {
 		return nil, e
@@ -48,7 +48,7 @@ func Record() (snd.Source, error) {
 	return InputSource(i), nil
 }
 
-func RecordWith(v snd.Form, c sample.Codec, n int) (snd.Source, error) {
+func RecordWith(v sound.Form, c sample.Codec, n int) (sound.Source, error) {
 	i, e := NewInput(v, c, n)
 	if e != nil {
 		return nil, e
@@ -57,7 +57,7 @@ func RecordWith(v snd.Form, c sample.Codec, n int) (snd.Source, error) {
 }
 
 type chn struct {
-	snd.Form
+	sound.Form
 	in  Input
 	ch  <-chan *Packet
 	buf []float64
@@ -73,7 +73,7 @@ func (ch *chn) Receive(dst []float64) (int, error) {
 	nC := ch.Channels()
 	if len(dst)%nC != 0 {
 		panic("wilma")
-		return 0, snd.ChannelAlignmentError
+		return 0, sound.ChannelAlignmentError
 	}
 	nF := len(dst) / nC
 	var f, c int
@@ -101,9 +101,9 @@ func (ch *chn) Receive(dst []float64) (int, error) {
 }
 
 // InputSource returns a source from an input.
-func InputSource(in Input) snd.Source {
+func InputSource(in Input) sound.Source {
 	return &chn{
 		Form: in,
-		in:    in,
-		ch:    in.C()}
+		in:   in,
+		ch:   in.C()}
 }

@@ -13,9 +13,9 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/freq"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/freq"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework CoreServices -framework CoreAudio -framework AudioToolbox
@@ -87,7 +87,7 @@ func (d *Dev) SetBufferSize(sz int) error {
 }
 
 // Input attempts to create and start an Input.
-func (d *Dev) Input(v snd.Form, co sample.Codec, n int) (Input, error) {
+func (d *Dev) Input(v sound.Form, co sample.Codec, n int) (Input, error) {
 	if !d.SupportsCodec(co) {
 		return nil, fmt.Errorf("unsupported sample codec: %s\n", co)
 	}
@@ -95,7 +95,7 @@ func (d *Dev) Input(v snd.Form, co sample.Codec, n int) (Input, error) {
 }
 
 // Output attempts to create and start an Output, such as to a speaker.
-func (d *Dev) Output(v snd.Form, co sample.Codec, n int) (Output, error) {
+func (d *Dev) Output(v sound.Form, co sample.Codec, n int) (Output, error) {
 	if !d.SupportsCodec(co) {
 		return nil, fmt.Errorf("unsupported sample codec: %s\n", co)
 	}
@@ -313,7 +313,7 @@ func init() {
 		DefaultInputDev = devs[0]
 		DefaultOutputDev = devs[0]
 	}
-	DefaultForm = snd.StereoCd()
+	DefaultForm = sound.StereoCd()
 	DefaultCodec = sample.SFloat32L
 	DefaultOutputBufferSize = 256
 	DefaultInputBufferSize = 256

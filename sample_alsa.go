@@ -6,7 +6,7 @@
 
 package sio
 
-import "github.com/irifrance/snd/sample"
+import "zikichombo.org/sound/sample"
 
 // #include "alsa/asoundlib.h"
 import "C"

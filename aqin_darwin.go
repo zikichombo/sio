@@ -8,8 +8,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework AudioToolbox -framework CoreFoundation
@@ -41,7 +41,7 @@ type aqin struct {
 	n       int
 }
 
-func newAqin(v snd.Form, co sample.Codec, nFrames int) (*aqin, error) {
+func newAqin(v sound.Form, co sample.Codec, nFrames int) (*aqin, error) {
 	id := <-_inaqNew
 	q := &_inaqs[id]
 	err := q.init(v, co, nFrames)
@@ -123,7 +123,7 @@ func (q *aqin) C() <-chan *Packet {
 	return q.ch
 }
 
-func (q *aqin) init(v snd.Form, co sample.Codec, bufSize int) error {
+func (q *aqin) init(v sound.Form, co sample.Codec, bufSize int) error {
 	q.initFormat(v, co)
 	q.initBufs(bufSize)
 	var err error
@@ -165,7 +165,7 @@ var _inaqNew chan int
 
 // set up process of ids and free list.
 // now, since each id refers to fixed place in memory
-// we can use it without locking in the snd data
+// we can use it without locking in the sound data
 // processing loop.
 func init() {
 	_inaqFree = make(chan int, maxAqins)

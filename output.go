@@ -6,16 +6,16 @@ package sio
 import (
 	"fmt"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/ops"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/ops"
+	"zikichombo.org/sound/sample"
 )
 
 // Interface Output encapsulates an output device
 // such as to a speaker.
 type Output interface {
-	snd.Form
-	snd.Closer
+	sound.Form
+	sound.Closer
 
 	// FillC returns a channel for receiving buffers to be filled and subsequently
 	// sent on PlayC() to output to the final destination.
@@ -46,7 +46,7 @@ type Output interface {
 // NewOutput attempts to open and start an output device.
 // v Gives the form (channels and sample rate), c the dataformat of individual samples,
 // and n the buffer size, in frames, of each packet.
-func NewOutput(v snd.Form, c sample.Codec, n int) (Output, error) {
+func NewOutput(v sound.Form, c sample.Codec, n int) (Output, error) {
 	return DefaultOutputDev.Output(v, c, n)
 }
 
@@ -57,7 +57,7 @@ func DefaultOutput() (Output, error) {
 }
 
 type osnk struct {
-	snd.Form
+	sound.Form
 	out   Output
 	fillC <-chan *Packet
 	playC chan<- *Packet
@@ -73,7 +73,7 @@ func (o *osnk) Close() error {
 func (o *osnk) Send(d []float64) error {
 	nC := o.Channels()
 	if len(d)%nC != 0 {
-		return snd.ChannelAlignmentError
+		return sound.ChannelAlignmentError
 	}
 	nF := len(d) / nC
 	var c, f int
@@ -102,7 +102,7 @@ func (o *osnk) Send(d []float64) error {
 }
 
 // OutputSink converts an output to a Sink.
-func OutputSink(o Output) snd.Sink {
+func OutputSink(o Output) sound.Sink {
 	return &osnk{
 		Form:  o,
 		out:   o,
@@ -115,7 +115,7 @@ func OutputSink(o Output) snd.Sink {
 // Play returns a non-nil error in case any problems
 // occured either creating an output from a device or
 // in the actual playback.
-func Play(src snd.Source) error {
+func Play(src sound.Source) error {
 	return PlaySource(src, DefaultOutputDev.SampleCodecs[0], DefaultOutputBufferSize)
 }
 
@@ -123,7 +123,7 @@ func Play(src snd.Source) error {
 // codec and packet buffer size.
 //
 // On some systems (such as alsa), the packet buffer size is only a hint.
-func PlaySource(src snd.Source, cod sample.Codec, bufSz int) error {
+func PlaySource(src sound.Source, cod sample.Codec, bufSz int) error {
 	o, err := NewOutput(src, cod, bufSz)
 	if err != nil {
 		return err

@@ -10,8 +10,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework AudioToolbox -framework CoreFoundation
@@ -39,7 +39,7 @@ type aqo struct {
 	n       int
 }
 
-func newAqo(v snd.Form, co sample.Codec, nFrames int) (*aqo, error) {
+func newAqo(v sound.Form, co sample.Codec, nFrames int) (*aqo, error) {
 	id := <-_aqoNew
 	q := &_aqos[id]
 	err := q.init(v, co, nFrames)
@@ -103,7 +103,7 @@ func (q *aqo) PlayC() chan<- *Packet {
 	return q.chs[1]
 }
 
-func (q *aqo) init(v snd.Form, c sample.Codec, bufSize int) error {
+func (q *aqo) init(v sound.Form, c sample.Codec, bufSize int) error {
 	q.initFormat(v, c)
 	q.initBufs(bufSize)
 	var err error
@@ -199,7 +199,7 @@ func (q *aqo) handleBuf(in *Packet, qb *C.struct_AudioQueueBuffer, d *C.char, ca
 	var ots C.AudioTimeStamp
 	st, _ := C.AudioQueueEnqueueBufferWithParameters(q.qRef, qb, 0, nil, 0, 0 /* trim end */, 0, nil, &its, &ots)
 	if err := caStatus(st); err != nil {
-		log.Printf("error enqueueing in output snd queue: %s\n", err)
+		log.Printf("error enqueueing in output sound queue: %s\n", err)
 	}
 	if q.n == 0 {
 		// tried this but it returns 0 until all buffers have been filled.
@@ -231,7 +231,7 @@ var _aqoNew chan int
 
 // set up process of ids and free list.
 // now, since each id refers to fixed place in memory
-// we can use it without locking in the snd data
+// we can use it without locking in the sound data
 // processing loop.
 func init() {
 	_aqoFree = make(chan int, maxAqos)

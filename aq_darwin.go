@@ -8,8 +8,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/irifrance/snd"
-	"github.com/irifrance/snd/sample"
+	"zikichombo.org/sound"
+	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework AudioToolbox -framework CoreFoundation
@@ -20,7 +20,7 @@ import (
 import "C"
 
 type aq struct {
-	snd.Form
+	sound.Form
 	codec sample.Codec
 	qRef  C.AudioQueueRef
 	qBufs [3]C.AudioQueueBufferRef
@@ -91,7 +91,7 @@ func (q *aq) enqueueBufs() {
 	}
 }
 
-func (q *aq) initFormat(v snd.Form, codec sample.Codec) {
+func (q *aq) initFormat(v sound.Form, codec sample.Codec) {
 	initFormat(&q.fmt, v, codec)
 	q.Form = v
 	q.codec = codec
