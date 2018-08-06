@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"zikichombo.org/sio"
 	"zikichombo.org/sound"
-	"zikichombo.org/sound/sio"
 )
 
 func TestDevices(t *testing.T) {

@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"zikichombo.org/sio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/freq"
 	"zikichombo.org/sound/gen"
 	"zikichombo.org/sound/sample"
-	"zikichombo.org/sound/sio"
 )
 
 func TestDarwinOut(t *testing.T) {

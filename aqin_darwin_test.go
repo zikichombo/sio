@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"zikichombo.org/codec/wav"
+	"zikichombo.org/sio"
 	"zikichombo.org/sound"
-	"zikichombo.org/sound/codec/wav"
 	"zikichombo.org/sound/ops"
 	"zikichombo.org/sound/sample"
-	"zikichombo.org/sound/sio"
 )
 
 func TestDarwinIn(t *testing.T) {
