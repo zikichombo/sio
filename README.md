@@ -1,4 +1,3 @@
-# ZikiChombo sio project
+# [ZikiChombo](http://zikichombo.org) sio module
 
-This is the repository for the [ZikiChombo sio project](http://zikichombo.org/projects).
 
