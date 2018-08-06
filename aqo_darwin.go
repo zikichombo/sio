@@ -117,7 +117,7 @@ func (q *aqo) init(v sound.Form, c sample.Codec, bufSize int) error {
 		&q.fmt,
 		(*[0]byte)(unsafe.Pointer(C.outputCallback)),
 		unsafe.Pointer(uintptr(q.id)),
-		nil,
+		C.CFRunLoopRef(0),
 		C.kCFRunLoopCommonModes,
 		0,
 		&q.qRef)

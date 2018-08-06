@@ -7,7 +7,7 @@
 #include <stdatomic.h>
 
 typedef struct HalThunk {
-	AudioObjectID au;
+	AudioUnit au;
 	AudioBufferList ioBufs[2];
 } HalThunk;
 
