@@ -3,9 +3,10 @@
 
 package sio
 
-// IoMode represents direction of audio data in a device
+// IoMode represents direction of audio data in a device.
 type IoMode int
 
+// Directions of audio data in devices.
 const (
 	InputMode  IoMode = iota // audio capture
 	OutputMode               // audio playback

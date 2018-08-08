@@ -73,7 +73,7 @@ func (dev *alsaPcm) open() error {
 	ret := C.snd_pcm_open(&dev.pcm, cName, dev.dir, 0)
 	defer C.free(unsafe.Pointer(cName))
 	if ret < 0 {
-		return fmt.Errorf("unable to open device: %s\n", sndStrerror(ret).Error())
+		return fmt.Errorf("unable to open device: %s", sndStrerror(ret).Error())
 	}
 
 	C.snd_pcm_hw_params_malloc(&dev.hwParams)
@@ -147,7 +147,7 @@ func (dev *alsaPcm) chooseBufPeriods(nF int) error {
 	var ret C.int
 	ret = C.snd_pcm_hw_params_set_period_size(dev.pcm, dev.hwParams, per, 0)
 	if ret < 0 {
-		return fmt.Errorf("unable to set period size to %d: %s\n",
+		return fmt.Errorf("unable to set period size to %d: %s",
 			per, sndStrerror(ret))
 	}
 	dev.periodSize = per
@@ -163,7 +163,7 @@ func (dev *alsaPcm) chooseBufPeriods(nF int) error {
 	C.snd_pcm_hw_params_get_buffer_size_max(dev.hwParams, &bufMax)
 	buf := 3 * dev.periodSize
 	if buf > bufMax {
-		return fmt.Errorf("buffer size would be forced to %d, need %d\n",
+		return fmt.Errorf("buffer size would be forced to %d, need %d",
 			bufMax, buf)
 	}
 	if buf < bufMin {
@@ -172,7 +172,7 @@ func (dev *alsaPcm) chooseBufPeriods(nF int) error {
 	}
 	ret = C.snd_pcm_hw_params_set_buffer_size(dev.pcm, dev.hwParams, buf)
 	if ret < 0 {
-		return fmt.Errorf("unable to set buffer size to %d: %s\n",
+		return fmt.Errorf("unable to set buffer size to %d: %s",
 			buf, sndStrerror(ret))
 	}
 	pszBytes := C.ulong(dev.Channels()*dev.codec.Bytes()) * per

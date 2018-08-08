@@ -5,8 +5,7 @@ package sio
 
 import "time"
 
-// Type Packet represents data which is exchanged between software and
-// a device.
+// Packet represents data which is exchanged between software and a device.
 type Packet struct {
 	D     []float64 // slice of data, channel-interleaved.
 	N     int       // frame number of first element.  For playback, this can be used to schedule in the future.
