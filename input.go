@@ -10,7 +10,7 @@ import (
 	"zikichombo.org/sound/sample"
 )
 
-// Interface Input encapsulates input from a device.
+// Input encapsulates input from a device.
 type Input interface {
 	sound.Form
 	sound.Closer

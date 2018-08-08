@@ -4,15 +4,14 @@
 package sio
 
 import (
-	"fmt"
+	"errors"
 
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/ops"
 	"zikichombo.org/sound/sample"
 )
 
-// Interface Output encapsulates an output device
-// such as to a speaker.
+// Output encapsulates an output device such as to a speaker.
 type Output interface {
 	sound.Form
 	sound.Closer
@@ -81,7 +80,7 @@ func (o *osnk) Send(d []float64) error {
 		if o.pkt == nil {
 			pkt, ok := <-o.fillC
 			if !ok {
-				return fmt.Errorf("output closed.\n")
+				return errors.New("output closed")
 			}
 			o.pkt = pkt
 		}

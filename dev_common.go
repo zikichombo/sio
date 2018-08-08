@@ -90,16 +90,17 @@ func (d *Dev) CanDuplexForm(sr freq.T, inC, outC int) bool {
 	return true
 }
 
-// DefaultInputDevice
+// DefaultInputDev is the default input device (audio capture).
 var DefaultInputDev *Dev
 
-// DefaultOutputDev device
+// DefaultOutputDev is the default output device (audio playback).
 var DefaultOutputDev *Dev
 
-// Default sampling rate + number of channels (Form)
+// DefaultForm specifies the default sampling rate and number of channels
+// (Form).
 var DefaultForm sound.Form
 
-// Default Sample codec
+// DefaultCodec is the default Sample codec.
 var DefaultCodec sample.Codec
 
 // DefaultOutputBufferSize, in number of frames per packet.
