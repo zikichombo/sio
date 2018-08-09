@@ -1,0 +1,16 @@
+language: go
+
+go:
+  - "1.10"
+  - "tip"
+
+notifications:
+  on_success: false
+  on_failure: always
+
+script: go get -t zikichombo.org/sio/...
+
+
+
+
+
