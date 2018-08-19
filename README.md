@@ -1,4 +1,4 @@
-# [ZikiChombo](http://zikichombo.org) sio module
+# [ZikiChombo](http://zikichombo.org) sio project
 
 [![Build Status](https://travis-ci.com/zikichombo/sio.svg?branch=master)](https://travis-ci.com/zikichombo/sio)
 
