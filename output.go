@@ -72,7 +72,7 @@ func (o *osnk) Close() error {
 func (o *osnk) Send(d []float64) error {
 	nC := o.Channels()
 	if len(d)%nC != 0 {
-		return sound.ChannelAlignmentError
+		return sound.ErrChannelAlignment
 	}
 	nF := len(d) / nC
 	var c, f int

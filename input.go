@@ -73,7 +73,7 @@ func (ch *chn) Receive(dst []float64) (int, error) {
 	nC := ch.Channels()
 	if len(dst)%nC != 0 {
 		panic("wilma")
-		return 0, sound.ChannelAlignmentError
+		return 0, sound.ErrChannelAlignment
 	}
 	nF := len(dst) / nC
 	var f, c int
