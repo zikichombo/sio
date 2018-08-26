@@ -3,6 +3,7 @@
 
 // +build darwin
 // +build cgo
+// +build listen
 
 package sio_test
 

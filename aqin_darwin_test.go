@@ -2,6 +2,7 @@
 // code is governed by a license that can be found in the License file.
 
 // +build darwin
+// +build listen
 
 package sio_test
 

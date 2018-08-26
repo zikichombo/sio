@@ -3,6 +3,7 @@
 
 // +build linux
 // +build cgo
+// +build listen
 
 package sio_test
 
