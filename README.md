@@ -79,7 +79,7 @@ For porting, see the [porting guide](Port.md) and [contributing](Contributing.md
     1. Web Audio
         1. [ ] Playback
         1. [ ] Capture
-        1. [x] Duplex
+        1. [-] Duplex
         1. [ ] Device Scanning
         1. [?] Device Notification
 
