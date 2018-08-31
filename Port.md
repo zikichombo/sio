@@ -43,7 +43,7 @@ Each directory contains code for all entry points for that host,
 and registers the entry points in its package init().
 
 # Entry Point
-An entry point defines the following interfaces.
+An entry point defines a proper subset of the following interfaces.
 
 
 # Supporting concepts Devices, Inputs, Outputs, Duplex, Packets
@@ -51,7 +51,13 @@ To implement an Entry Point, ZikiChombo provides some
 supporting concepts which can make life easier, but they are 
 unnecessary.
 
+# Build tags
+Submitted ports and tests which produce or capture sound should
+use the build tag "listen" so that they do not run by default
+but are easily invokable with 
 
-
+```
+go test zikichombo.org/sio/... -tags listen
+```
 
 

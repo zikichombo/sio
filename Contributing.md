@@ -1,15 +1,13 @@
 # Contributing to zikichombo.org/sio
 
-1. If you are filing an issue for a bug report, please specify
-the system, version, environment and to the extent possible
-a small reproducer.
-1. For porting, see Port.md.  ZikiChombo supports 3rd party 
-independently licensed and distributed ports.  
-To contribute to ZikiChombo distribution, we need to arrive at a 
-licensing agreement for your port under our shared author 
-BSD license.
+1. If you are filing an issue for a bug report, please specify the system,
+   version, environment and to the extent possible a small reproducer.
 
-
+1. For porting, see [Ports](Port.md).  [ZikiChombo](http://zikichombo.org)
+   supports 3rd party independently licensed ports as well ports distributed
+   with this sio module.  To contribute to the zikichombo.org/sio distribution,
+   we need an out-of-github band confirmation,  for example by [email](contrib@zikichombo.org),
+   to participate as an author in our shared author BSD License.
 
 
 

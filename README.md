@@ -3,7 +3,21 @@
 [![Build Status](https://travis-ci.com/zikichombo/sio.svg?branch=master)](https://travis-ci.com/zikichombo/sio)
 
 # Ports
-For porting, see the [porting guide](Port.md) and [contributing](Contributing.md)
+For porting, see the [porting guide](Port.md) and [contributing](Contributing.md).
+
+## Status
+
+Below is the status of sio ports.  Items marked with an "X" in plain text (checked off
+in html rendered markdown) are incorporated into sio, potentially with alpha status.
+Items marked with a "?" indicates we do not yet have sufficient knowledge to judge 
+whether or not the item is a TODO.  Related discussion on the issue tracker is welcome.
+Items marked with "-" are those for which we think the functionality is not relevant or 
+not sufficiently supported by the external software interface to add to sio.
+
+In the event there are opinions about the content of the list itself, such as whether 
+to support JACK, whether to interface with Android HAL, the issue tracker is our best
+means of coordinating the discussion.
+
 
 * Linux
     1. ALSA (cgo)
@@ -50,6 +64,7 @@ For porting, see the [porting guide](Port.md) and [contributing](Contributing.md
         1. [ ] Duplex
         1. [?] Device Scanning
         1. [?] Device Notification
+    1. Android Audio HAL [?]
     1. AudioFlinger
         1. [ ] Playback
         1. [ ] Capture
@@ -57,7 +72,7 @@ For porting, see the [porting guide](Port.md) and [contributing](Contributing.md
         1. [?] Device Scanning
         1. [?] Device Notification
 * Windows
-    1. ASIO
+    1. ASIO 
         1. [?] Playback
         1. [?] Capture
         1. [?] Duplex
