@@ -3,6 +3,8 @@
 
 // Package sio provides support for audio capture and playback.
 //
+// Package sio is part of http://zikichombo.org
+//
 // Package sio is in alpha, under development.  Playback and capture
 // interfaces are more mature than duplex and device interfaces.  Linux/ALSA
 // and darwin have worked on a few test systems.  This package intends to
