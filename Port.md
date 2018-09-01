@@ -89,25 +89,24 @@ go test zikichombo.org/sio/... -tags listen
 
 # 3rd Party Ports
 To have an independently distributed port listed here, please file an issue.
-We expect listings to work with the listed versons
+We only list the most recent zc version/port version pairs.
 
 | Port | zc version | Port version |
-------------------------------------
-|  a   |  b         |    c         |
-------------------------------------
+-------|------------|--------------|
+|  -   |  v0.0.1-alpha.2 |         |    vX.Y.Z         |
 
 
 # References
 The following may be useful references for those considering sio ports.
-[Plan9 Audio](http://man.cat-v.org/plan_9/3/audio)
-[PortAudio](http://portaudio.com)
-[FreeBSD](https://www.freebsd.org/doc/handbook/sound-setup.html)
-[ALSA](https://www.alsa-project.org/main/index.php/Main_Page)
-[RtAudio](http://www.music.mcgill.ca/~gary/rtaudio/)
-[Web Audio](https://www.w3.org/TR/webaudio/)
-[Audio Units](https://developer.apple.com/documentation/audiounit?language=objc)
-[VST](https://www.steinberg.net/en/company/technologies/vst3.html)
-[Pulse Audio](https://en.wikipedia.org/wiki/PulseAudio)
-[Android Audio](https://source.android.com/devices/audio/terminology)
-[AudioFlinger](https://android.googlesource.com/platform/frameworks/av/+/109347d421413303eb1678dd9e2aa9d40acf89d2/services/audioflinger/AudioFlinger.cpp)
+* [Plan9 Audio](http://man.cat-v.org/plan_9/3/audio)
+* [PortAudio](http://portaudio.com)
+* [FreeBSD](https://www.freebsd.org/doc/handbook/sound-setup.html)
+* [ALSA](https://www.alsa-project.org/main/index.php/Main_Page)
+* [RtAudio](http://www.music.mcgill.ca/~gary/rtaudio/)
+* [Web Audio](https://www.w3.org/TR/webaudio/)
+* [Audio Units](https://developer.apple.com/documentation/audiounit?language=objc)
+* [VST](https://www.steinberg.net/en/company/technologies/vst3.html)
+* [Pulse Audio](https://en.wikipedia.org/wiki/PulseAudio)
+* [Android Audio](https://source.android.com/devices/audio/terminology)
+* [AudioFlinger](https://android.googlesource.com/platform/frameworks/av/+/109347d421413303eb1678dd9e2aa9d40acf89d2/services/audioflinger/AudioFlinger.cpp)
 
