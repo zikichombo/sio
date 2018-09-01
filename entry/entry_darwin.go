@@ -1,5 +1,5 @@
 package entry
 
 func Names() []string {
-	return [...]string{"Apple AUHAL", "Apple RemoteIO", "Apple Audio Queue Services"}
+	return [...]string{"CoreAudio Audio Queue Services", "CoreAudio AUHAL", "CoreAudio RemoteIO"}
 }
