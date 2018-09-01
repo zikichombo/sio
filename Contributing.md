@@ -9,5 +9,9 @@
    we need an out-of-github band confirmation,  for example by [email](contrib@zikichombo.org),
    to participate as an author in our shared author BSD License.
 
+1. General discussion relating to ports, entry points, sio project design are 
+   welcome on the issue tracker, please label any new issues with "discussion: "
+   to help distinguish these from bugs.
+
 
 
