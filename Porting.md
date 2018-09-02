@@ -77,6 +77,23 @@ this code, libsio.{Input,Output,Duplex,Packet,DuplexPacket} provide interfaces
 for synchronising with the host via Go channels and implementations to adapt
 these structures to sound.{Source,Sink,Duplex}.
 
+## Import directions
+Package zikichombo.org/sio imports the package implementing entry points 
+for registration side effects
+
+```
+import _ "zikichombo.org/sio/ports/{runtime.GOOS}"
+```
+
+Packages implementing the entries should import "zikichombo.org/entry" and
+call 
+```
+entry.RegisterEntry()
+```
+
+These packages may also import zikichombo.org/libsio.
+
+
 
 # Duplex
 
