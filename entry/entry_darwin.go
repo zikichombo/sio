@@ -7,6 +7,6 @@ var names = [...]string{"CoreAudio Audio Queue Services", "CoreAudio AUHAL", "Co
 
 func Names() []string {
 	res := make([]string, len(names))
-	copy(res, names)
+	copy(res, names[:])
 	return res
 }

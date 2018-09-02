@@ -13,6 +13,7 @@ import (
 	"math"
 	"unsafe"
 
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/freq"
 	"zikichombo.org/sound/sample"
@@ -27,14 +28,14 @@ import (
 // #include <AudioToolbox/AudioUnitProperties.h>
 import "C"
 
-var devices = []*Dev{
-	&Dev{Name: "CoreAudio -- AudioQueueService (on default devices)",
+var devices = []*libsio.Dev{
+	&libsio.Dev{Name: "CoreAudio -- AudioQueueService (on default devices)",
 		SampleCodecs: []sample.Codec{
 			sample.SInt8, sample.SInt16L, sample.SInt16B, sample.SInt24L,
 			sample.SInt24B, sample.SInt32L, sample.SInt32B, sample.SFloat32L,
 			sample.SFloat32B}}}
 
-func Devices() []*Dev {
+func Devices() []*libsio.Dev {
 	return devices
 }
 
@@ -46,7 +47,7 @@ func Devices() []*Dev {
 //
 // The nominal sample rate can be interpreted as the rate
 // at which the device tries to operate.
-func (d *Dev) SetSampleRate(sr freq.T) error {
+func SetSampleRate(d *libsio.Dev, sr freq.T) error {
 	fsr := C.Float64(sr.Float64())
 	var pAddr C.AudioObjectPropertyAddress
 	pAddr.mScope = C.kAudioDevicePropertyScopeOutput
@@ -61,7 +62,7 @@ func (d *Dev) SetSampleRate(sr freq.T) error {
 	return caStatus(st)
 }
 
-func (d *Dev) SetBufferSize(sz int) error {
+func SetBufferSize(d *libsio.Dev, sz int) error {
 	csz := C.UInt32(sz)
 	var pAddr C.AudioObjectPropertyAddress
 	pAddr.mSelector = C.kAudioDevicePropertyBufferFrameSize
@@ -87,7 +88,7 @@ func (d *Dev) SetBufferSize(sz int) error {
 }
 
 // Input attempts to create and start an Input.
-func (d *Dev) Input(v sound.Form, co sample.Codec, n int) (Input, error) {
+func mkInput(d *libsio.Dev, v sound.Form, co sample.Codec, n int) (libsio.Input, error) {
 	if !d.SupportsCodec(co) {
 		return nil, fmt.Errorf("unsupported sample codec: %s\n", co)
 	}
@@ -95,7 +96,7 @@ func (d *Dev) Input(v sound.Form, co sample.Codec, n int) (Input, error) {
 }
 
 // Output attempts to create and start an Output, such as to a speaker.
-func (d *Dev) Output(v sound.Form, co sample.Codec, n int) (Output, error) {
+func mkOutput(d *libsio.Dev, v sound.Form, co sample.Codec, n int) (libsio.Output, error) {
 	if !d.SupportsCodec(co) {
 		return nil, fmt.Errorf("unsupported sample codec: %s\n", co)
 	}
@@ -129,11 +130,11 @@ func list() error {
 	if err != nil {
 		return err
 	}
-	Devs := make([]Dev, 0, 7)
+	Devs := make([]libsio.Dev, 0, 7)
 
 	for _, dev := range devs {
 		N := len(Devs)
-		Devs = append(Devs, Dev{Id: uint64(dev)})
+		Devs = append(Devs, libsio.Dev{Id: uint64(dev)})
 		D := &Devs[N]
 		nm, err := name(dev)
 		if err != nil {
@@ -156,11 +157,9 @@ func list() error {
 		D.MaxOutChannels = oc
 		if dev == dIn {
 			D.IsDefaultIn = true
-			DefaultInputDev = D
 		}
 		if dev == dOut {
 			D.IsDefaultOut = true
-			DefaultOutputDev = D
 		}
 		if dev == dSys {
 			D.IsDefaultSys = true
@@ -310,11 +309,5 @@ func init() {
 	list()
 	devs := Devices()
 	if len(devs) > 0 {
-		DefaultInputDev = devs[0]
-		DefaultOutputDev = devs[0]
 	}
-	DefaultForm = sound.StereoCd()
-	DefaultCodec = sample.SFloat32L
-	DefaultOutputBufferSize = 256
-	DefaultInputBufferSize = 256
 }

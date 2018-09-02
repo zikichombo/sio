@@ -10,6 +10,7 @@ import (
 	"time"
 	"unsafe"
 
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
@@ -32,7 +33,7 @@ const (
 type aqo struct {
 	mu  sync.Mutex
 	id  int
-	chs [2]chan *Packet
+	chs [2]chan *libsio.Packet
 	cch chan struct{}
 	aq
 	running bool
@@ -95,11 +96,11 @@ func (q *aqo) _close() {
 	q.free()
 }
 
-func (q *aqo) FillC() <-chan *Packet {
+func (q *aqo) FillC() <-chan *libsio.Packet {
 	return q.chs[0]
 }
 
-func (q *aqo) PlayC() chan<- *Packet {
+func (q *aqo) PlayC() chan<- *libsio.Packet {
 	return q.chs[1]
 }
 
@@ -130,8 +131,8 @@ func (q *aqo) init(v sound.Form, c sample.Codec, bufSize int) error {
 		return err
 	}
 	C.AudioQueueSetParameter(q.qRef, C.kAudioQueueParam_Volume, 1.0)
-	q.chs[0] = make(chan *Packet)
-	q.chs[1] = make(chan *Packet, 1)
+	q.chs[0] = make(chan *libsio.Packet)
+	q.chs[1] = make(chan *libsio.Packet, 1)
 	q.cch = make(chan struct{}, 1)
 	q.n = 0
 	return nil
@@ -181,7 +182,7 @@ func (q *aqo) callback(qb *C.struct_AudioQueueBuffer, d *C.char, cap int) {
 	}
 }
 
-func (q *aqo) handleBuf(in *Packet, qb *C.struct_AudioQueueBuffer, d *C.char, cap int) {
+func (q *aqo) handleBuf(in *libsio.Packet, qb *C.struct_AudioQueueBuffer, d *C.char, cap int) {
 	dsz := q.codec.Bytes() //C.sizeof_Float32
 	bsz := len(in.D) * dsz
 	slice := (*[1 << 30]byte)(unsafe.Pointer(d))[:bsz] //cap]

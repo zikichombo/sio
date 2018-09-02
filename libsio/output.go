@@ -7,8 +7,6 @@ import (
 	"errors"
 
 	"zikichombo.org/sound"
-	"zikichombo.org/sound/ops"
-	"zikichombo.org/sound/sample"
 )
 
 // Output encapsulates an output device such as to a speaker.
@@ -40,19 +38,6 @@ type Output interface {
 	// this functionality, it should close the device and log an error
 	// when the client attempts to schedule in the future.
 	PlayC() chan<- *Packet
-}
-
-// NewOutput attempts to open and start an output device.
-// v Gives the form (channels and sample rate), c the dataformat of individual samples,
-// and n the buffer size, in frames, of each packet.
-func NewOutput(v sound.Form, c sample.Codec, n int) (Output, error) {
-	return DefaultOutputDev.Output(v, c, n)
-}
-
-// DefaultOutput attempts to open an output stream with default
-// valve, sample codec, and output buffer size.
-func DefaultOutput() (Output, error) {
-	return NewOutput(DefaultForm, DefaultCodec, DefaultOutputBufferSize)
 }
 
 type osnk struct {
@@ -107,27 +92,4 @@ func OutputSink(o Output) sound.Sink {
 		out:   o,
 		fillC: o.FillC(),
 		playC: o.PlayC()}
-}
-
-// Play plays the Source src using the defaults.
-//
-// Play returns a non-nil error in case any problems
-// occured either creating an output from a device or
-// in the actual playback.
-func Play(src sound.Source) error {
-	return PlaySource(src, DefaultOutputDev.SampleCodecs[0], DefaultOutputBufferSize)
-}
-
-// PlaySource is like Play, but allows setting the sample
-// codec and packet buffer size.
-//
-// On some systems (such as alsa), the packet buffer size is only a hint.
-func PlaySource(src sound.Source, cod sample.Codec, bufSz int) error {
-	o, err := NewOutput(src, cod, bufSz)
-	if err != nil {
-		return err
-	}
-	snk := OutputSink(o)
-	defer snk.Close()
-	return ops.Copy(snk, src)
 }

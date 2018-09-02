@@ -6,7 +6,7 @@ package entry
 import (
 	"time"
 
-	"zikichombo.org/sio"
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
@@ -35,7 +35,7 @@ type SourceOpener interface {
 	// e: any error
 	//
 	// Motto: "OpenSource, by and for gophers, and for quality."
-	OpenSource(dev *sio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Source, time.Time, error)
+	OpenSource(dev *libsio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Source, time.Time, error)
 }
 
 // SinkOpener is an interface for opening a sound.Sink to output such as
@@ -63,11 +63,11 @@ type SinkOpener interface {
 	// e: any error
 	//
 	// OpenSink should
-	OpenSink(dev *sio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Sink, *time.Time, error)
+	OpenSink(dev *libsio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Sink, *time.Time, error)
 }
 
 // DuplexOpener is an interface for opening Duplex connections.
 type DuplexOpener interface {
 	// OpenDuplex
-	OpenDuplex(dev *sio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Duplex, time.Time, error)
+	OpenDuplex(dev *libsio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Duplex, time.Time, error)
 }

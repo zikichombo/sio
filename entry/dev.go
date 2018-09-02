@@ -3,14 +3,16 @@
 
 package entry
 
-import "zikichombo.org/sio"
+import (
+	"zikichombo.org/sio/libsio"
+)
 
 // DevScanner scans for devices on the host
 type DevScanner interface {
 	// DevScan returns a
-	DevScan() []*sio.Dev
+	DevScan() []*libsio.Dev
 	// Devices returns a possibly cached list of devices.
-	Devices() []*sio.Dev
+	Devices() []*libsio.Dev
 }
 
 // DevChangeSense indicates whether a DevChange
@@ -26,7 +28,7 @@ const (
 // device connectivity.
 type DevChange struct {
 	Sense DevChangeSense
-	Dev   *sio.Dev
+	Dev   *libsio.Dev
 }
 
 // DevNotifier is an interface for notifications of device changes.

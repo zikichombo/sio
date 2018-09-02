@@ -8,6 +8,7 @@ import (
 	"time"
 	"unsafe"
 
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
@@ -24,7 +25,7 @@ type aq struct {
 	codec sample.Codec
 	qRef  C.AudioQueueRef
 	qBufs [3]C.AudioQueueBufferRef
-	gBufs [3]Packet
+	gBufs [3]libsio.Packet
 	gbp   int
 	fmt   C.AudioStreamBasicDescription
 }
@@ -80,9 +81,9 @@ func (q *aq) allocateBufs(nFrames int) error {
 
 func (q *aq) initBufs(sz int) {
 	c := int(q.fmt.mChannelsPerFrame)
-	q.gBufs[0] = Packet{D: make([]float64, sz*c)}
-	q.gBufs[1] = Packet{D: make([]float64, sz*c)}
-	q.gBufs[2] = Packet{D: make([]float64, sz*c)}
+	q.gBufs[0] = libsio.Packet{D: make([]float64, sz*c)}
+	q.gBufs[1] = libsio.Packet{D: make([]float64, sz*c)}
+	q.gBufs[2] = libsio.Packet{D: make([]float64, sz*c)}
 }
 
 func (q *aq) enqueueBufs() {

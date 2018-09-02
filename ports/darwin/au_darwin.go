@@ -12,6 +12,7 @@ import (
 	"math"
 	"unsafe"
 
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
@@ -28,8 +29,8 @@ import "C"
 
 type auhal struct {
 	u     C.AudioUnit
-	dev   *Dev
-	iom   IoMode
+	dev   *libsio.Dev
+	iom   libsio.IoMode
 	form  sound.Form
 	codec sample.Codec
 	bufSz int
@@ -38,8 +39,8 @@ type auhal struct {
 type bus struct {
 }
 
-func newAuio(dev *Dev, iom IoMode, v sound.Form, co sample.Codec, bufSz int) (*auhal, error) {
-	if err := dev.SetSampleRate(v.SampleRate()); err != nil {
+func newAuio(dev *libsio.Dev, iom libsio.IoMode, v sound.Form, co sample.Codec, bufSz int) (*auhal, error) {
+	if err := SetSampleRate(dev, v.SampleRate()); err != nil {
 		return nil, err
 	}
 	var ud C.AudioComponentDescription
@@ -108,7 +109,7 @@ func (u *auhal) enableIO() error {
 	return nil
 }
 
-func (u *auhal) setDev(dev *Dev) error {
+func (u *auhal) setDev(dev *libsio.Dev) error {
 	iom := u.iom
 	if dev.MaxOutChannels == 0 && iom.Outputs() {
 		return fmt.Errorf("no output channels on device %s\n", dev.Name)
@@ -116,7 +117,7 @@ func (u *auhal) setDev(dev *Dev) error {
 	if dev.MaxInChannels == 0 && iom.Inputs() {
 		return fmt.Errorf("no output channels on device %s\n", dev.Name)
 	}
-	if err := dev.SetBufferSize(u.bufSz); err != nil {
+	if err := SetBufferSize(dev, u.bufSz); err != nil {
 		return err
 	}
 	id := C.AudioObjectID(u.dev.Id)

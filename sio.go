@@ -19,7 +19,7 @@ func Capture() (sound.Source, error) {
 // default settings with the default entry, returning
 // a non-nil in case of failure.
 func Play(sound.Source) error {
-	return nil, nil
+	return nil
 }
 
 // Player tries to return a sound.Sink to which Sends

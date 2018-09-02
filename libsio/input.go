@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"zikichombo.org/sound"
-	"zikichombo.org/sound/sample"
 )
 
 // Input encapsulates input from a device.
@@ -27,36 +26,6 @@ type Input interface {
 	// must do so in a way that it can fill the next sample buffer, or buffers,
 	// while the client is processing the previous one.
 	C() <-chan *Packet
-}
-
-// NewInput tries to open and start an input device.
-// v Gives the valve information, c the dataformat of individual samples,
-// and n the buffer size, in frames, of each packet.
-func NewInput(v sound.Form, c sample.Codec, n int) (Input, error) {
-	return DefaultInputDev.Input(v, c, n)
-}
-
-// DefaultInput tries to open and start an input
-// device with default sampling rate, number of channels and
-// buffersize.
-func DefaultInput() (Input, error) {
-	return NewInput(DefaultForm, DefaultCodec, DefaultInputBufferSize)
-}
-
-func Record() (sound.Source, error) {
-	i, e := DefaultInput()
-	if e != nil {
-		return nil, e
-	}
-	return InputSource(i), nil
-}
-
-func RecordWith(v sound.Form, c sample.Codec, n int) (sound.Source, error) {
-	i, e := NewInput(v, c, n)
-	if e != nil {
-		return nil, e
-	}
-	return InputSource(i), nil
 }
 
 type chn struct {

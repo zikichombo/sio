@@ -8,6 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
@@ -34,7 +35,7 @@ type aqin struct {
 	mu   sync.Mutex
 	once sync.Once
 	id   int
-	ch   chan *Packet
+	ch   chan *libsio.Packet
 	cch  chan struct{}
 	aq
 	running bool
@@ -119,7 +120,7 @@ func (q *aqin) Close() error {
 	return nil
 }
 
-func (q *aqin) C() <-chan *Packet {
+func (q *aqin) C() <-chan *libsio.Packet {
 	return q.ch
 }
 
@@ -150,7 +151,7 @@ func (q *aqin) init(v sound.Form, co sample.Codec, bufSize int) error {
 		return err
 	}
 	q.enqueueBufs()
-	q.ch = make(chan *Packet, 1)
+	q.ch = make(chan *libsio.Packet, 1)
 	q.cch = make(chan struct{}, 1)
 	q.running = false
 	q.n = 0

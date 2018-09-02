@@ -4,13 +4,13 @@
 package entry
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"sync"
 
-	"zikichombo.org/sio"
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
+	"zikichombo.org/sound/ops"
 	"zikichombo.org/sound/sample"
 )
 
@@ -50,17 +50,18 @@ func (e *Entry) Capture() (sound.Source, error) {
 	if e.SourceOpener == nil {
 		return nil, ErrUnsupported
 	}
-	var theDev *sio.Dev
+	var theDev *libsio.Dev
 	if e.DevScan != nil && len(e.Devices()) > 0 {
 		theDev = e.Devices()[0]
 	}
-	s, _, err := e.SourceOpener(theDev, e.DefaultForm, e.DefaultSampleCodec, e.DefaultBufferSize)
+	s, _, err := e.SourceOpener.OpenSource(theDev, e.DefaultForm,
+		e.DefaultSampleCodec, e.DefaultInputBufferSize)
 	return s, err
 }
 
 // Play plays a sound.Source
 func (e *Entry) Play(src sound.Source) error {
-	snk, err := Player()
+	snk, err := e.Player()
 	if err != nil {
 		return err
 	}
@@ -73,11 +74,12 @@ func (e *Entry) Player() (sound.Sink, error) {
 	if e.SinkOpener == nil {
 		return nil, ErrUnsupported
 	}
-	var theDev *sio.Dev
+	var theDev *libsio.Dev
 	if e.DevScan != nil && len(e.Devices()) > 0 {
 		theDev = e.Devices()[0]
 	}
-	snk, _, err := e.SinkOpener(theDev, e.DefaultForm, e.DefaultSampleCodec, e.DefaultBufferSize)
+	snk, _, err := e.SinkOpener.OpenSink(theDev, e.DefaultForm,
+		e.DefaultSampleCodec, e.DefaultOutputBufferSize)
 	if err != nil {
 		return nil, err
 	}
@@ -89,17 +91,14 @@ func (e *Entry) Duplex() (sound.Duplex, error) {
 	if e.SinkOpener == nil {
 		return nil, ErrUnsupported
 	}
-	var theDev *sio.Dev
+	var theDev *libsio.Dev
 	if e.DevScan != nil && len(e.Devices()) > 0 {
 		theDev = e.Devices()[0]
 	}
-	dpx, _, err := e.DuplexOpener(theDev, e.DefaultForm, e.DefaultSampleCodec, e.DefaultBufferSize)
+	dpx, _, err := e.DuplexOpener.OpenDuplex(theDev, e.DefaultForm,
+		e.DefaultSampleCodec, e.DefaultDuplexBufferSize)
 	return dpx, err
 }
-
-// Names returns the (potentially) supported entry point names for the host.
-// The names are taken in priority order.
-func Names() []string
 
 type entry struct {
 	Entry
@@ -112,10 +111,6 @@ func pkgPath(v interface{}) string {
 }
 
 var entries map[string][]*entry
-
-// ErrInvalidEntryName is used on RegisterEntry to
-// enforce the use of known entry points.
-var ErrInvalidEntryName = errors.New("invalid entry name")
 
 // RegisterEntry registers an Entry
 func RegisterEntry(e *Entry) error {
@@ -140,16 +135,16 @@ func RegisterEntry(e *Entry) error {
 var eMu sync.Mutex
 var theEntry *Entry
 
-func OpenDefault(pkgSel func(string) *Entry) (*Entry, error) {
+func OpenDefault(pkgSel func(string) bool) (*Entry, error) {
 	nms := Names()
 	if len(nms) == 0 {
 		return nil, ErrNoEntryAvailable
 	}
-	return Open(nms[0])
+	return Open(nms[0], pkgSel)
 }
 
 // Open
-func Open(name string, pkgSel func(string) *Entry) (*Entry, error) {
+func Open(name string, pkgSel func(string) bool) (*Entry, error) {
 	if theEntry != nil {
 		return theEntry, nil
 	}
