@@ -1,3 +1,5 @@
+// +build listen
+
 package sio_test
 
 import (
