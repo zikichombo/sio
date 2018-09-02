@@ -1,3 +1,6 @@
+// Copyright 2018 The ZikiChomgo Authors. All rights reserved.  Use of this source
+// code is governed by a license that can be found in the License file.
+
 package entry
 
 import (
@@ -33,8 +36,10 @@ type Entry struct {
 	DefaultSampleCodec sample.Codec
 
 	// DefaultBufferSize gives a default buffer size, as passed to
-	// {Source,Sink,Duplex}Opener for the entry.
-	DefaultBufferSize int
+	// {Source}Opener for the entry.
+	DefaultInputBufferSize  int
+	DefaultOutputBufferSize int
+	DefaultDuplexBufferSize int
 	// Default Form gives a default sound form, as passed to
 	// {Source,Sink,Duplex}Opener for the entry.
 	DefaultForm sound.Form
@@ -54,7 +59,17 @@ func (e *Entry) Capture() (sound.Source, error) {
 }
 
 // Play plays a sound.Source
-func (e *Entry) Play(s sound.Source) error {
+func (e *Entry) Play(src sound.Source) error {
+	snk, err := Player()
+	if err != nil {
+		return err
+	}
+	return ops.Copy(snk, src)
+}
+
+// Player tries to return a sound.Sink to which
+// writes are played.
+func (e *Entry) Player() (sound.Sink, error) {
 	if e.SinkOpener == nil {
 		return nil, ErrUnsupported
 	}
@@ -63,6 +78,9 @@ func (e *Entry) Play(s sound.Source) error {
 		theDev = e.Devices()[0]
 	}
 	snk, _, err := e.SinkOpener(theDev, e.DefaultForm, e.DefaultSampleCodec, e.DefaultBufferSize)
+	if err != nil {
+		return nil, err
+	}
 	return snk, err
 }
 
@@ -132,6 +150,9 @@ func OpenDefault(pkgSel func(string) *Entry) (*Entry, error) {
 
 // Open
 func Open(name string, pkgSel func(string) *Entry) (*Entry, error) {
+	if theEntry != nil {
+		return theEntry, nil
+	}
 	res := findEntry(entries[name], pkgSel)
 	if res == nil {
 		return nil, fmt.Errorf("couldn't locate entry.")
@@ -144,6 +165,7 @@ func Open(name string, pkgSel func(string) *Entry) (*Entry, error) {
 	return res, nil
 }
 
+// TBD(wsc) deal with open/close race.
 func Close() {
 	if theEntry != nil {
 		theEntry = nil

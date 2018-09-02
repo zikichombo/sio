@@ -1,4 +1,4 @@
-// Copyright 2018 The ZikiChombo Authors. All rights reserved.  Use of this source
+// Copyright 2018 The ZikiChomgo Authors. All rights reserved.  Use of this source
 // code is governed by a license that can be found in the License file.
 
 package libsio
@@ -89,22 +89,3 @@ func (d *Dev) CanDuplexForm(sr freq.T, inC, outC int) bool {
 	}
 	return true
 }
-
-// DefaultInputDev is the default input device (audio capture).
-var DefaultInputDev *Dev
-
-// DefaultOutputDev is the default output device (audio playback).
-var DefaultOutputDev *Dev
-
-// DefaultForm specifies the default sampling rate and number of channels
-// (Form).
-var DefaultForm sound.Form
-
-// DefaultCodec is the default Sample codec.
-var DefaultCodec sample.Codec
-
-// DefaultOutputBufferSize, in number of frames per packet.
-var DefaultOutputBufferSize int
-
-// DefaultInputBufferSize, in number of frames per packet.
-var DefaultInputBufferSize int
