@@ -40,7 +40,7 @@ type bus struct {
 }
 
 func newAuio(dev *libsio.Dev, iom libsio.IoMode, v sound.Form, co sample.Codec, bufSz int) (*auhal, error) {
-	if err := SetSampleRate(dev, v.SampleRate()); err != nil {
+	if err := setSampleRate(dev, v.SampleRate()); err != nil {
 		return nil, err
 	}
 	var ud C.AudioComponentDescription
@@ -117,7 +117,7 @@ func (u *auhal) setDev(dev *libsio.Dev) error {
 	if dev.MaxInChannels == 0 && iom.Inputs() {
 		return fmt.Errorf("no output channels on device %s\n", dev.Name)
 	}
-	if err := SetBufferSize(dev, u.bufSz); err != nil {
+	if err := setBufferSize(dev, u.bufSz); err != nil {
 		return err
 	}
 	id := C.AudioObjectID(u.dev.Id)

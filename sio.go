@@ -18,14 +18,18 @@ func Capture() (sound.Source, error) {
 // Play tries to play a sound.Source
 // default settings with the default entry, returning
 // a non-nil in case of failure.
-func Play(sound.Source) error {
-	return nil
+func Play(src sound.Source) error {
+	ent, err := OpenDefaultEntry(nil)
+	if err != nil {
+		return err
+	}
+	return ent.Play(src)
 }
 
 // Player tries to return a sound.Sink to which Sends
 // are played to some system output.  Default entry
 // and settings are applied.
-func Player() (sound.Sink, error) {
+func Player(v sound.Form) (sound.Sink, error) {
 	return nil, nil
 }
 
@@ -36,12 +40,12 @@ func Duplex() (sound.Duplex, error) {
 
 // OpenDefaultEntry tries to return the default entry.
 func OpenDefaultEntry(pkgSel func(string) bool) (*entry.Entry, error) {
-	return nil, nil
+	return entry.OpenDefault(pkgSel)
 }
 
 // OpenEntry tries to return the named entry.
 func OpenEntry(name string, pkgSel func(string) bool) (*entry.Entry, error) {
-	return nil, nil
+	return entry.Open(name, pkgSel)
 }
 
 // Close closes the currently in use entry, if any, so that

@@ -14,9 +14,7 @@ import (
 	"unsafe"
 
 	"zikichombo.org/sio/libsio"
-	"zikichombo.org/sound"
 	"zikichombo.org/sound/freq"
-	"zikichombo.org/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework CoreServices -framework CoreAudio -framework AudioToolbox
@@ -28,17 +26,6 @@ import (
 // #include <AudioToolbox/AudioUnitProperties.h>
 import "C"
 
-var devices = []*libsio.Dev{
-	&libsio.Dev{Name: "CoreAudio -- AudioQueueService (on default devices)",
-		SampleCodecs: []sample.Codec{
-			sample.SInt8, sample.SInt16L, sample.SInt16B, sample.SInt24L,
-			sample.SInt24B, sample.SInt32L, sample.SInt32B, sample.SFloat32L,
-			sample.SFloat32B}}}
-
-func Devices() []*libsio.Dev {
-	return devices
-}
-
 // SetSampleRate attempts to set the nominal sample rate
 // of d to sr.
 //
@@ -47,7 +34,7 @@ func Devices() []*libsio.Dev {
 //
 // The nominal sample rate can be interpreted as the rate
 // at which the device tries to operate.
-func SetSampleRate(d *libsio.Dev, sr freq.T) error {
+func setSampleRate(d *libsio.Dev, sr freq.T) error {
 	fsr := C.Float64(sr.Float64())
 	var pAddr C.AudioObjectPropertyAddress
 	pAddr.mScope = C.kAudioDevicePropertyScopeOutput
@@ -62,7 +49,7 @@ func SetSampleRate(d *libsio.Dev, sr freq.T) error {
 	return caStatus(st)
 }
 
-func SetBufferSize(d *libsio.Dev, sz int) error {
+func setBufferSize(d *libsio.Dev, sz int) error {
 	csz := C.UInt32(sz)
 	var pAddr C.AudioObjectPropertyAddress
 	pAddr.mSelector = C.kAudioDevicePropertyBufferFrameSize
@@ -85,22 +72,6 @@ func SetBufferSize(d *libsio.Dev, sz int) error {
 		}
 	}
 	return nil
-}
-
-// Input attempts to create and start an Input.
-func mkInput(d *libsio.Dev, v sound.Form, co sample.Codec, n int) (libsio.Input, error) {
-	if !d.SupportsCodec(co) {
-		return nil, fmt.Errorf("unsupported sample codec: %s\n", co)
-	}
-	return newAqin(v, co, n)
-}
-
-// Output attempts to create and start an Output, such as to a speaker.
-func mkOutput(d *libsio.Dev, v sound.Form, co sample.Codec, n int) (libsio.Output, error) {
-	if !d.SupportsCodec(co) {
-		return nil, fmt.Errorf("unsupported sample codec: %s\n", co)
-	}
-	return newAqo(v, co, n)
 }
 
 func list() error {
@@ -303,11 +274,4 @@ func strProperty(dev C.AudioObjectID, sel C.AudioObjectPropertySelector) (string
 	defer C.free(unsafe.Pointer(cName))
 	C.CFStringGetCString(cfs, cName, C.long(length), C.kCFStringEncodingUTF8)
 	return C.GoString(cName), nil
-}
-
-func init() {
-	list()
-	devs := Devices()
-	if len(devs) > 0 {
-	}
 }

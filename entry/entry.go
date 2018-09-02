@@ -5,6 +5,7 @@ package entry
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sync"
 
@@ -61,7 +62,7 @@ func (e *Entry) Capture() (sound.Source, error) {
 
 // Play plays a sound.Source
 func (e *Entry) Play(src sound.Source) error {
-	snk, err := e.Player()
+	snk, err := e.Player(src)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func (e *Entry) Play(src sound.Source) error {
 
 // Player tries to return a sound.Sink to which
 // writes are played.
-func (e *Entry) Player() (sound.Sink, error) {
+func (e *Entry) Player(v sound.Form) (sound.Sink, error) {
 	if e.SinkOpener == nil {
 		return nil, ErrUnsupported
 	}
@@ -78,7 +79,7 @@ func (e *Entry) Player() (sound.Sink, error) {
 	if e.DevScan != nil && len(e.Devices()) > 0 {
 		theDev = e.Devices()[0]
 	}
-	snk, _, err := e.SinkOpener.OpenSink(theDev, e.DefaultForm,
+	snk, _, err := e.SinkOpener.OpenSink(theDev, v,
 		e.DefaultSampleCodec, e.DefaultOutputBufferSize)
 	if err != nil {
 		return nil, err
@@ -110,7 +111,7 @@ func pkgPath(v interface{}) string {
 	return typ.PkgPath()
 }
 
-var entries map[string][]*entry
+var entries map[string][]*entry = make(map[string][]*entry)
 
 // RegisterEntry registers an Entry
 func RegisterEntry(e *Entry) error {
@@ -129,6 +130,7 @@ func RegisterEntry(e *Entry) error {
 		Entry:   *e,
 		pkgPath: pkgPath(e)}
 	entries[nm] = append(entries[nm], privEntry)
+	log.Printf("registered entry %s\n", nm)
 	return nil
 }
 

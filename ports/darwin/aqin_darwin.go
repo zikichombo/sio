@@ -157,29 +157,3 @@ func (q *aqin) init(v sound.Form, co sample.Codec, bufSize int) error {
 	q.n = 0
 	return nil
 }
-
-// globals so we can not have go pointers to go pointers in c.
-// instead we refer to ids.
-var _inaqs [maxAqins]aqin
-var _inaqFree chan int
-var _inaqNew chan int
-
-// set up process of ids and free list.
-// now, since each id refers to fixed place in memory
-// we can use it without locking in the sound data
-// processing loop.
-func init() {
-	_inaqFree = make(chan int, maxAqins)
-	_inaqNew = make(chan int)
-	for i := 0; i < maxAqins; i++ {
-		_inaqs[i].id = i
-		_inaqFree <- i
-	}
-	go func() {
-		var f int
-		for {
-			f = <-_inaqFree
-			_inaqNew <- f
-		}
-	}()
-}
