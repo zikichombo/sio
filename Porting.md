@@ -37,7 +37,7 @@ listens and plays in real time with feedback, or writing a PulseAudio
 replacement, you're more likely to be interested in using a specialized entry
 point than the default.
 
-There is a directory ZikiChombo/sio/{runtime.GOOS} for each host. 
+There is a directory ZikiChombo/sio/ports/{runtime.GOOS} for each host. 
 
 # Entry Points
 An entry point defines a proper subset of the functionality listed in the main
@@ -49,12 +49,14 @@ communicate.  These are named after the respective entry points in the main
 Each entry point defines a base set of functionality related to what the entry
 point supports:  device scanning, device change notifications, playback,
 capture, duplex.  Note the README excludes some functionality from some
-entry points.  The functionality is slightly more rich than implementing
-sound.{Source,Sink,Duplex} to allow callers to achieve latency or other 
-requirements.  Package sio automatically uses the Entry point to apply
-defaults so that the caller may simply call Play, Capture, Duplex on 
-sound.{Source,Sink,Duplex}.  Package sio also enforces that only one 
-entry point may be in use at a time in one Go program.
+entry points and entry points may be incomplete.  
+
+The functionality is slightly more rich than implementing
+sio.{Capture,Play,Player,Duplex} to allow callers to achieve latency or other
+requirements.  Package sio automatically uses the Entry point to apply defaults
+so that the caller may simply call sio.{Play,Player,Capture,Duplex}.  Package
+sio also enforces that only one entry point may be in use at a time in one Go
+program.
 
 Entry points can then be registered by a package implementing them in
 their init() function.  Consumers of ZikiChombo may optionaly control which 
@@ -63,26 +65,36 @@ package initialisation order.
 
 see [entry](http://godoc.org/zikichombo.org/sio/entry) for details.
 
+The list of entry names for each host is defined in entry/entry_{host}.go
+under the function Names().
+
 
 # Supporting concepts Devices, Inputs, Outputs, Duplex, Packets
-To implement an Entry Point, ZikiChombo provides some 
-supporting concepts which can make life easier, but they are 
-unnecessary to implement an entry point.  see [libsio](http://godoc.org/zikichombo.org/sio/libsio)
-for details.
+To implement an Entry Point, ZikiChombo provides some support code in
+[libsio](http://godoc.org/zikichombo.org/sio/libsio).  The only required part
+of this code to reference is libsio/Dev to implement an Entry.  Other parts of
+this code, libsio.{Input,Output,Duplex,Packet,DuplexPacket} provide interfaces
+for synchronising with the host via Go channels and implementations to adapt
+these structures to sound.{Source,Sink,Duplex}.
 
-## Duplex
+
+# Duplex
+
 Duplex support is intended for synchronized input/output.  Systems which simply
 buffer underlying independent I+O and loosely synchronize with the slack that
 results from the buffering should consider not implementing Duplex and just
 letting the caller use sound.{Source,Sink} synchronously.  Ideally, duplex
 should be audio hardware clock synchronized as in Apple's Aggregate devices.
 Duplexing I+O ringbuffers which are independently clocked to the same sample
-rate are acceptable but less reliable especially for long sessions.
+rate are acceptable but less reliable especially for long sessions.  PortAudio
+actually supports duplex connections which have different sample rates.  We
+recommend that this not be done to preserve the reliability of latency in
+Duplex implementations.
 
-## Build tags
-Submitted ports and tests which produce or capture sound should
-use the build tag "listen" so that they do not run by default
-but are easily invokable with 
+# Build tags
+
+Submitted ports and tests which produce or capture sound should use the build
+tag "listen" so that they do not run by default but are easily invokable with 
 
 ```
 go test zikichombo.org/sio/... -tags listen
@@ -95,7 +107,7 @@ We only list the most recent zc version/port version pairs here.
 
 | Port | zc version | Port version |
 -------|------------|--------------|
-|  -   |  v0.0.1-alpha.2 |         |    vX.Y.Z         |
+|  -   |  v0.0.1-alpha.2 | vX.Y.Z  |
 
 
 # References
