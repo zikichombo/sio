@@ -4,7 +4,10 @@ import "zikichombo.org/sio"
 
 // DevScanner scans for devices on the host
 type DevScanner interface {
+	// DevScan returns a
 	DevScan() []*sio.Dev
+	// Devices returns a possibly cached list of devices.
+	Devices() []*sio.Dev
 }
 
 // DevChangeSense indicates whether a DevChange

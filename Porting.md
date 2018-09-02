@@ -1,11 +1,11 @@
-# Ports
+# Porting Guide
 
-## Status
+## Ports' Status
 The status of ports is kept in the main module [README](README.md).
 
 ## Overview
 ZikiChombo sio code has a porting process that is unconventional due to the
-nature sound support on host systems.  Usually, to port a system, on takes some
+nature of sound support on host systems.  Usually, to port a system, on takes some
 desired cross-host functionality, such as a filesystem, and implements it with
 the OS or OS/hardware combination of interest and that's that (to make a long
 story short).
@@ -67,15 +67,17 @@ see [entry](http://godoc.org/zikichombo.org/sio/entry) for details.
 # Supporting concepts Devices, Inputs, Outputs, Duplex, Packets
 To implement an Entry Point, ZikiChombo provides some 
 supporting concepts which can make life easier, but they are 
-unnecessary to implement an entry point.  see [sio](http://godoc.org/zikichombo.org/sio)
+unnecessary to implement an entry point.  see [libsio](http://godoc.org/zikichombo.org/sio/libsio)
 for details.
 
 ## Duplex
 Duplex support is intended for synchronized input/output.  Systems which simply
-buffer underlying independent I+O and synchronize with the slack that results
-from the buffering should consider not implementing Duplex and just letting the
-caller use sound.{Source,Sink} synchronously.  Ideally, duplex should be audio
-hardware clock synchronized as in Apple's Aggregate devices.
+buffer underlying independent I+O and loosely synchronize with the slack that
+results from the buffering should consider not implementing Duplex and just
+letting the caller use sound.{Source,Sink} synchronously.  Ideally, duplex
+should be audio hardware clock synchronized as in Apple's Aggregate devices.
+Duplexing I+O ringbuffers which are independently clocked to the same sample
+rate are acceptable but less reliable especially for long sessions.
 
 ## Build tags
 Submitted ports and tests which produce or capture sound should
@@ -89,7 +91,7 @@ go test zikichombo.org/sio/... -tags listen
 
 # 3rd Party Ports
 To have an independently distributed port listed here, please file an issue.
-We only list the most recent zc version/port version pairs.
+We only list the most recent zc version/port version pairs here.
 
 | Port | zc version | Port version |
 -------|------------|--------------|

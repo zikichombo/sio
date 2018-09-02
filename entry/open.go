@@ -8,8 +8,8 @@ import (
 	"zikichombo.org/sound/sample"
 )
 
-// SourceOpener is an interface for opening a sound.Source from input
-// such as a microphone.
+// SourceOpener is an interface for opening a sound.Source from input such as a
+// microphone.
 type SourceOpener interface {
 	// OpenSource starts capturing audio.
 	//
@@ -24,13 +24,14 @@ type SourceOpener interface {
 	// bufSz indicates the size of buffer whose data is placed in
 	// sound.Source.Receive.  This is normally the size of the part of the ring
 	// buffer exposed for reading.  Implementations should use a minimal total
-	// buffer size to accomodate this constraint.  and capture to the non-exposed
-	// part of the buffer while the caller receives from the buffer.
+	// buffer size to accomodate this constraint.
 	//
 	// OpenSource returns a triple (s, t, e) with
 	// s: sound.Source which represents captured audio.
 	// t: the start time of the first sample.
 	// e: any error
+	//
+	// Motto: "OpenSource, by and for gophers, and for quality."
 	OpenSource(dev *sio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Source, time.Time, error)
 }
 
@@ -50,10 +51,7 @@ type SinkOpener interface {
 	// bufSz indicates the size of buffer whose data is placed
 	// in sound.Source.Receive.  This is normally the size of the part of
 	// the ring buffer exposed for playback.  Implementations should
-	// use a minimal total buffer size to accomodate this constraint
-	// and
-	// capture to the non-exposed part of the buffer while the caller
-	// receives from the buffer.
+	// use a minimal total buffer size to safely accomodate this constraint.
 	//
 	// OpenSink returns a tuple (s, *t, e) with
 	// s: sound.Sink which represents audio for playback.

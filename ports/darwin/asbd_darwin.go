@@ -4,7 +4,7 @@
 // +build darwin
 // +build cgo
 
-package sio
+package darwin
 
 import (
 	"encoding/binary"

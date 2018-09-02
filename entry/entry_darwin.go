@@ -1,5 +1,9 @@
 package entry
 
+var names = [...]string{"CoreAudio Audio Queue Services", "CoreAudio AUHAL", "CoreAudio RemoteIO"}
+
 func Names() []string {
-	return [...]string{"CoreAudio Audio Queue Services", "CoreAudio AUHAL", "CoreAudio RemoteIO"}
+	res := make([]string, len(names))
+	copy(res, names)
+	return res
 }

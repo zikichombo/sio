@@ -3,7 +3,7 @@
 
 // +build cgo
 
-package sio_test
+package libsio_test
 
 import (
 	"fmt"

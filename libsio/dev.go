@@ -4,7 +4,7 @@
 // +build !darwin !cgo
 // +build !linux !cgo
 
-package sio
+package libsio
 
 import (
 	"fmt"

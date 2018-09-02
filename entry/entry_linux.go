@@ -1,5 +1,5 @@
 package entry
 
 func Names() []string {
-	return [...]string{"ALSACGO", "ALSAGO", "PulseAudio"}
+	return [...]string{"Linux -- ALSACGO", "Linux -- ALSAGO", "Linux -- PulseAudio"}
 }

@@ -5,7 +5,7 @@
 // +build cgo
 // +build listen
 
-package sio_test
+package darwin_test
 
 import (
 	"fmt"

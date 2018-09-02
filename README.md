@@ -2,8 +2,16 @@
 
 [![Build Status](https://travis-ci.com/zikichombo/sio.svg?branch=master)](https://travis-ci.com/zikichombo/sio)
 
+# Usage
+If you are using sio for sound capture and playback, only the following packages
+are relevant.
+
+* [sio](http://godoc.org/zikichombo.org/sio)
+* [entry](http://godoc.org/zikichombo.org/sio/entry)
+
+
 # Ports
-For porting, see the [porting guide](Port.md) and [contributing](Contributing.md).
+For porting, see the [porting guide](Porting.md) and [contributing](Contributing.md).
 
 ## Status
 

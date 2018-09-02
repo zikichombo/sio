@@ -3,7 +3,7 @@
 1. If you are filing an issue for a bug report, please specify the system,
    version, environment and to the extent possible a small reproducer.
 
-1. For porting, see [Ports](Port.md).  [ZikiChombo](http://zikichombo.org)
+1. For porting, see [the porting guide](Porting.md).  [ZikiChombo](http://zikichombo.org)
    supports 3rd party independently licensed ports as well ports distributed
    with this sio module.  To contribute to the zikichombo.org/sio distribution,
    we need an out-of-github band confirmation,  for example by [email](contrib@zikichombo.org),
