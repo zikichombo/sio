@@ -63,9 +63,9 @@ their init() function.  Consumers of ZikiChombo may optionaly control which
 package implements a given entry point. The default is chosen by 
 package initialisation order.
 
-see [entry](http://godoc.org/zikichombo.org/sio/entry) for details.
+see [host](http://godoc.org/zikichombo.org/sio/host) for details.
 
-The list of entry names for each host is defined in entry/entry_{host}.go
+The list of entry names for each host is defined in host/entry_{host}.go
 under the function Names().
 
 

@@ -7,7 +7,7 @@ If you are using sio for sound capture and playback, only the following packages
 are relevant.
 
 * [sio](http://godoc.org/zikichombo.org/sio)
-* [entry](http://godoc.org/zikichombo.org/sio/entry)
+* [host](http://godoc.org/zikichombo.org/sio/host)
 
 
 # Ports
