@@ -1,47 +1,42 @@
 package darwin
 
 import (
-	"fmt"
 	"log"
 	"time"
 
-	"zikichombo.org/sio/entry"
+	"zikichombo.org/sio/host"
 	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
 
-// implements devScanner part of entry.
-type devScanner struct {
+type aqsEntry struct {
+	host.NullEntry
 }
 
-// audio queue services just default to the system default device
-// which the user can change.
-func (d *devScanner) Devices() []*libsio.Dev {
-	return []*libsio.Dev{
-		&libsio.Dev{Name: "CoreAudio -- AudioQueueService (on default devices)",
-			SampleCodecs: []sample.Codec{
-				sample.SInt8, sample.SInt16L, sample.SInt16B, sample.SInt24L,
-				sample.SInt24B, sample.SInt32L, sample.SInt32B, sample.SFloat32L,
-				sample.SFloat32B}}}
+func (e *aqsEntry) Name() string {
+	return "CoreAudio Audio Queue Services"
 }
 
-// we don't need to distinguish scanning from getting the list, possibly
-// cached.
-func (d *devScanner) DevScan() []*libsio.Dev {
-	return d.Devices()
+func (e *aqsEntry) DefaultBufferSize() int {
+	return 256
 }
 
-// implements entry.SourceOpener part of entry.Entry.
-type inOpener struct {
+func (e *aqsEntry) DefaultSampleCodec() sample.Codec {
+	return sample.SFloat32L
 }
 
-func (i *inOpener) OpenSource(d *libsio.Dev, v sound.Form, co sample.Codec, bsz int) (sound.Source, time.Time, error) {
+func (e *aqsEntry) DefaultForm() sound.Form {
+	return sound.MonoCd()
+}
+
+func (e *aqsEntry) CanOpenSource() bool {
+	return true
+}
+
+func (e *aqsEntry) OpenSource(d *libsio.Dev, v sound.Form, co sample.Codec, b int) (sound.Source, time.Time, error) {
 	var t time.Time
-	if !d.SupportsCodec(co) {
-		return nil, t, fmt.Errorf("unsupported sample codec: %s\n", co)
-	}
-	aq, err := newAqin(v, co, bsz)
+	aq, err := newAqin(v, co, b)
 	if err != nil {
 		return nil, t, err
 	}
@@ -49,29 +44,18 @@ func (i *inOpener) OpenSource(d *libsio.Dev, v sound.Form, co sample.Codec, bsz 
 	return src, aq.gBufs[0].Start, err
 }
 
-// implements entry.SinkOpener part of entry.Entry.
-type outOpener struct {
+func (e *aqsEntry) CanOpenSink() bool {
+	return true
 }
 
-func (o *outOpener) OpenSink(d *libsio.Dev, v sound.Form, co sample.Codec, bsz int) (sound.Sink, *time.Time, error) {
-	if !d.SupportsCodec(co) {
-		return nil, nil, fmt.Errorf("unsupported sample codec: %s\n", co)
-	}
-	aqo, err := newAqo(v, co, bsz)
+func (e *aqsEntry) OpenSink(d *libsio.Dev, v sound.Form, co sample.Codec, b int) (sound.Sink, *time.Time, error) {
+	aqo, err := newAqo(v, co, b)
 	if err != nil {
 		return nil, nil, err
 	}
 	snk := libsio.OutputSink(aqo)
 	return snk, &aqo.gBufs[0].Start, nil
 }
-
-var e = &entry.Entry{
-	Name:                    "CoreAudio Audio Queue Services",
-	DefaultInputBufferSize:  256,
-	DefaultOutputBufferSize: 256,
-	DevScanner:              &devScanner{},
-	SinkOpener:              &outOpener{},
-	SourceOpener:            &inOpener{}}
 
 // globals so we can not have go pointers to go pointers in c.
 // instead we refer to ids.
@@ -97,7 +81,8 @@ func init() {
 			_inaqNew <- f
 		}
 	}()
-	if err := entry.RegisterEntry(e); err != nil {
-		log.Printf("zc failed load %s: %s\n", e.Name, err.Error())
+	e := &aqsEntry{NullEntry: host.NullEntry{}}
+	if err := host.RegisterEntry(e); err != nil {
+		log.Printf("zc failed load %s: %s\n", e.Name(), err.Error())
 	}
 }

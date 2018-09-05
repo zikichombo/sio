@@ -72,10 +72,12 @@ under the function Names().
 # Supporting concepts Devices, Inputs, Outputs, Duplex, Packets
 To implement an Entry Point, ZikiChombo provides some support code in
 [libsio](http://godoc.org/zikichombo.org/sio/libsio).  The only required part
-of this code to reference is libsio/Dev to implement an Entry.  Other parts of
-this code, libsio.{Input,Output,Duplex,Packet,DuplexPacket} provide interfaces
-for synchronising with the host via Go channels and implementations to adapt
-these structures to sound.{Source,Sink,Duplex}.
+of this code to reference is libsio/Dev to implement an Entry, and use in
+addition to referencing libsio.Dev is only required for device related functionality.
+
+Other parts of this code, libsio.{Input,Output,Duplex,Packet,DuplexPacket}
+provide interfaces for synchronising with the host via Go channels and
+implementations to adapt these structures to sound.{Source,Sink,Duplex}.
 
 ## Import directions
 Package zikichombo.org/sio imports the package implementing entry points 
@@ -85,10 +87,10 @@ for registration side effects
 import _ "zikichombo.org/sio/ports/{runtime.GOOS}"
 ```
 
-Packages implementing the entries should import "zikichombo.org/entry" and
+Packages implementing the entries should import "zikichombo.org/sio/entry" and
 call 
 ```
-entry.RegisterEntry()
+entry.RegisterEntry(mySuperReliableEntry)
 ```
 
 These packages may also import zikichombo.org/libsio.
