@@ -4,12 +4,14 @@
 // +build linux
 // +build cgo
 
-package sio
+package linux
 
 import (
-	"fmt"
-	"unsafe"
+	"log"
+	"time"
 
+	"zikichombo.org/sio/host"
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/sample"
 )
@@ -17,7 +19,83 @@ import (
 // #cgo LDFLAGS: -lasound
 // #include "alsa/asoundlib.h"
 //
-import "C"
+//import "C"
+
+type alsaEntry struct {
+	host.NullEntry
+}
+
+func (e *alsaEntry) Name() string {
+	return "CoreAudio Audio Queue Services"
+}
+
+func (e *alsaEntry) DefaultBufferSize() int {
+	return 512
+}
+
+func (e *alsaEntry) DefaultSampleCodec() sample.Codec {
+	return sample.SInt16L
+}
+
+func (e *alsaEntry) DefaultForm() sound.Form {
+	return sound.StereoCD()
+}
+
+func (e *alsaEntry) CanOpenSource() bool {
+	return true
+}
+
+func (e *alsaEntry) OpenSource(d *libsio.Dev, v sound.Form, co sample.Codec, b int) (sound.Source, time.Time, error) {
+	var t time.Time
+	pcm := newAlsaPcmIn(d.Name, v, co, n)
+	if err := pcm.open(); err != nil {
+		return nil, t, err
+	}
+	return libsio.InputSource(pcm), pcm.Packets[0].Start, nil
+}
+
+func (e *alsaEntry) CanOpenSink() bool {
+	return true
+}
+
+func (e *alsaEntry) OpenSink(d *libsio.Dev, v sound.Form, co sample.Codec, b int) (sound.Sink, *time.Time, error) {
+	pcm := newAlsaPcmOut(d.Name, v, co, n)
+	if err := pcm.open(); err != nil {
+		return nil, nil, err
+	}
+	return libsio.InputSource(pcm), pcm.Packets[0].Start, nil
+}
+
+func (e *alsaEntry) HasDevices() bool {
+	return true
+}
+
+func (e *alsaEntry) Devices() []*libsio.Dev {
+	return devices
+}
+
+func (e *alsaEntry) DefaultInputDevice() *libsio.Dev {
+	return devices[0]
+}
+
+func (e *alsaEntry) DefaultOutputDevice() *libsio.Dev {
+	return devices[0]
+}
+
+func (e *alsaEntry) DefaultDuplexDevice() *libsio.Dev {
+	return devices[0]
+}
+
+// set up process of ids and free list.
+// now, since each id refers to fixed place in memory
+// we can use it without locking in the sound data
+// processing loop.
+func init() {
+	e := &alsaEntry{NullEntry: host.NullEntry{}}
+	if err := host.RegisterEntry(e); err != nil {
+		log.Printf("zc failed load %s: %s\n", e.Name(), err.Error())
+	}
+}
 
 //TBD(wsc) figure out how to do this right.
 var devices = []*Dev{
@@ -25,29 +103,9 @@ var devices = []*Dev{
 	&Dev{Name: "plughw:0,0"},
 	&Dev{Name: "hw:0,0"}}
 
-func Devices() []*Dev {
-	return devices
-}
-
-// Input attempts to create and start an Input.
-func (d *Dev) Input(v sound.Form, co sample.Codec, n int) (Input, error) {
-	pcm := newAlsaPcmIn(d.Name, v, co, n)
-	if err := pcm.open(); err != nil {
-		return nil, err
-	}
-	return pcm, nil
-}
-
-// Output attempts to create and start an Output, such as to a speaker.
-func (d *Dev) Output(v sound.Form, co sample.Codec, n int) (Output, error) {
-	pcm := newAlsaPcmOut(d.Name, v, co, n)
-	if err := pcm.open(); err != nil {
-		return nil, err
-	}
-	return pcm, nil
-}
-
-func init() {
+// name says it all.
+/*
+func oldBrokenInit() {
 	devs := Devices()
 	if len(devs) > 0 {
 		DefaultInputDev = devs[0]
@@ -80,9 +138,5 @@ func init() {
 		C.snd_pcm_drain(pcm)
 		C.snd_pcm_close(pcm)
 	}
-	devices = devs[:j]
-	DefaultForm = sound.StereoCd()
-	DefaultCodec = sample.SFloat32L
-	DefaultOutputBufferSize = 256
-	DefaultInputBufferSize = 256
 }
+*/

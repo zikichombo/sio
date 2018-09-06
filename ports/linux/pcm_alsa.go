@@ -4,7 +4,7 @@
 // +build linux
 // +build cgo
 
-package sio
+package linux
 
 import (
 	"errors"
