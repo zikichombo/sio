@@ -16,17 +16,12 @@ import (
 	"zikichombo.org/sound/sample"
 )
 
-// #cgo LDFLAGS: -lasound
-// #include "alsa/asoundlib.h"
-//
-//import "C"
-
 type alsaEntry struct {
 	host.NullEntry
 }
 
 func (e *alsaEntry) Name() string {
-	return "CoreAudio Audio Queue Services"
+	return "Linux -- ALSACGO"
 }
 
 func (e *alsaEntry) DefaultBufferSize() int {
@@ -38,7 +33,7 @@ func (e *alsaEntry) DefaultSampleCodec() sample.Codec {
 }
 
 func (e *alsaEntry) DefaultForm() sound.Form {
-	return sound.StereoCD()
+	return sound.StereoCd()
 }
 
 func (e *alsaEntry) CanOpenSource() bool {
@@ -47,11 +42,11 @@ func (e *alsaEntry) CanOpenSource() bool {
 
 func (e *alsaEntry) OpenSource(d *libsio.Dev, v sound.Form, co sample.Codec, b int) (sound.Source, time.Time, error) {
 	var t time.Time
-	pcm := newAlsaPcmIn(d.Name, v, co, n)
+	pcm := newAlsaPcmIn(d.Name, v, co, b)
 	if err := pcm.open(); err != nil {
 		return nil, t, err
 	}
-	return libsio.InputSource(pcm), pcm.Packets[0].Start, nil
+	return libsio.InputSource(pcm), pcm.pkts[0].Start, nil
 }
 
 func (e *alsaEntry) CanOpenSink() bool {
@@ -59,11 +54,11 @@ func (e *alsaEntry) CanOpenSink() bool {
 }
 
 func (e *alsaEntry) OpenSink(d *libsio.Dev, v sound.Form, co sample.Codec, b int) (sound.Sink, *time.Time, error) {
-	pcm := newAlsaPcmOut(d.Name, v, co, n)
+	pcm := newAlsaPcmOut(d.Name, v, co, b)
 	if err := pcm.open(); err != nil {
 		return nil, nil, err
 	}
-	return libsio.InputSource(pcm), pcm.Packets[0].Start, nil
+	return libsio.OutputSink(pcm), &pcm.pkts[0].Start, nil
 }
 
 func (e *alsaEntry) HasDevices() bool {
@@ -74,15 +69,15 @@ func (e *alsaEntry) Devices() []*libsio.Dev {
 	return devices
 }
 
-func (e *alsaEntry) DefaultInputDevice() *libsio.Dev {
+func (e *alsaEntry) DefaultInputDev() *libsio.Dev {
 	return devices[0]
 }
 
-func (e *alsaEntry) DefaultOutputDevice() *libsio.Dev {
+func (e *alsaEntry) DefaultOutputDev() *libsio.Dev {
 	return devices[0]
 }
 
-func (e *alsaEntry) DefaultDuplexDevice() *libsio.Dev {
+func (e *alsaEntry) DefaultDuplexDev() *libsio.Dev {
 	return devices[0]
 }
 
@@ -98,10 +93,10 @@ func init() {
 }
 
 //TBD(wsc) figure out how to do this right.
-var devices = []*Dev{
-	&Dev{Name: "default"},
-	&Dev{Name: "plughw:0,0"},
-	&Dev{Name: "hw:0,0"}}
+var devices = []*libsio.Dev{
+	&libsio.Dev{Name: "default"},
+	&libsio.Dev{Name: "plughw:0,0"},
+	&libsio.Dev{Name: "hw:0,0"}}
 
 // name says it all.
 /*

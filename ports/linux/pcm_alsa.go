@@ -14,6 +14,7 @@ import (
 	"time"
 	"unsafe"
 
+	"zikichombo.org/sio/libsio"
 	"zikichombo.org/sound"
 	"zikichombo.org/sound/freq"
 	"zikichombo.org/sound/sample"
@@ -34,10 +35,10 @@ type alsaPcm struct {
 	swParams   *C.snd_pcm_sw_params_t
 	perBuf     *C.char
 	start      time.Time
-	pkts       [3]Packet
+	pkts       [3]libsio.Packet
 	pi         int
 	doneC      chan struct{}
-	pktC       [2]chan *Packet
+	pktC       [2]chan *libsio.Packet
 	once       sync.Once
 	periodSize C.ulong
 	periods    int
@@ -46,15 +47,15 @@ type alsaPcm struct {
 func newAlsaPcmIn(name string, v sound.Form, sc sample.Codec, nf int) *alsaPcm {
 	res := newAlsaPcm(name, v, sc, nf)
 	res.dir = C.SND_PCM_STREAM_CAPTURE
-	res.pktC[0] = make(chan *Packet, 1)
+	res.pktC[0] = make(chan *libsio.Packet, 1)
 	return res
 }
 
 func newAlsaPcmOut(name string, v sound.Form, sc sample.Codec, nf int) *alsaPcm {
 	res := newAlsaPcm(name, v, sc, nf)
 	res.dir = C.SND_PCM_STREAM_PLAYBACK
-	res.pktC[0] = make(chan *Packet, 1)
-	res.pktC[1] = make(chan *Packet)
+	res.pktC[0] = make(chan *libsio.Packet, 1)
+	res.pktC[1] = make(chan *libsio.Packet)
 	return res
 }
 
@@ -246,7 +247,7 @@ func (dev *alsaPcm) servePlay() {
 			return
 		}
 	}
-	var pkt *Packet
+	var pkt *libsio.Packet
 	var ok bool
 	pi := 0
 	N := 0
@@ -342,15 +343,15 @@ wi:
 	return nil
 }
 
-func (dev *alsaPcm) C() <-chan *Packet {
+func (dev *alsaPcm) C() <-chan *libsio.Packet {
 	return dev.pktC[0]
 }
 
-func (dev *alsaPcm) FillC() <-chan *Packet {
+func (dev *alsaPcm) FillC() <-chan *libsio.Packet {
 	return dev.pktC[0]
 }
 
-func (dev *alsaPcm) PlayC() chan<- *Packet {
+func (dev *alsaPcm) PlayC() chan<- *libsio.Packet {
 	return dev.pktC[1]
 }
 
