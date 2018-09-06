@@ -1,5 +1,9 @@
 # Ring Buffer connecting Go and C
 
+this document contains some (still buggy) thoughts on
+using atomic to synchronise hardware sound buffers with
+go slices/libsio.Packet
+
 # Design characteristics:
 
 - elements are pairs (*C.char, *Packet) containing per-slice buffer sizes,
