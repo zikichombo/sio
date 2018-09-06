@@ -4,4 +4,4 @@
 // Package linux zc sound/io entry points.
 //
 // Package linux is part of http://zikichombo.org
-package linux
+package linux /* import "zikichombo.org/sio/ports/linux" */
