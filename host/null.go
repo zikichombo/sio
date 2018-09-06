@@ -53,21 +53,28 @@ func (n *NullEntry) CanOpenDuplex() bool {
 	return false
 }
 
-func (n *NullEntry) OpenDuplex(d *libsio.Dev, iv, ov sound.Form, co sample.Codec, b int) (sound.Duplex, time.Time, error) {
+func (n *NullEntry) OpenDuplex(d *libsio.Dev, iv, ov sound.Form, co sample.Codec, b int) (sound.Duplex, time.Time, *time.Time, error) {
 	var t time.Time
-	return nil, t, ErrUnsupported
+	return nil, t, nil, ErrUnsupported
 }
 
-func (n *NullEntry) ScanDevices() []*DevScanResult {
-	return nil
+func (n *NullEntry) HasDevices() bool {
+	return false
+}
+
+func (n *NullEntry) ScanDevices() ([]*DevScanResult, error) {
+	return nil, ErrUnsupported
 }
 
 func (n *NullEntry) Devices() []*libsio.Dev {
 	return nil
 }
 
-func (n *NullEntry) DevicesNotify(chan<- *DevChange) {
-	return
+func (n *NullEntry) DevicesNotify(chan<- *DevChange) error {
+	return nil
+}
+
+func (n *NullEntry) DevicesNotifyClose(c chan<- *DevChange) {
 }
 
 func (n *NullEntry) DefaultInputDev() *libsio.Dev {

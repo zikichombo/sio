@@ -3,7 +3,4 @@
 
 package host
 
-// Names names the sound system entry points for the host.
-func Names() []string {
-	return [...]string{}
-}
+var names = [...]string{}

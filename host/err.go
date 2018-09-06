@@ -5,7 +5,7 @@ import "errors"
 var (
 	// ErrInvalidEntryName is used on RegisterEntry to
 	// enforce the use of known entry points.
-	ErrInvalidEntryName = errors.New("unknown entry")
+	ErrInvalidEntryName = errors.New("invalid entry name")
 	// ErrUnsupported is returned when the entry in use
 	// does not support the requested operation.
 	ErrUnsupported = errors.New("unsupported")

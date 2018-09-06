@@ -4,10 +4,3 @@
 package host
 
 var names = [...]string{"CoreAudio Audio Queue Services", "CoreAudio AUHAL", "CoreAudio RemoteIO"}
-
-// Names names the sound system entry points for the host.
-func Names() []string {
-	res := make([]string, len(names))
-	copy(res, names[:])
-	return res
-}

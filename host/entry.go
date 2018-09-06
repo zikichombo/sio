@@ -35,8 +35,8 @@ type Entry interface {
 	// should be returned.
 	DefaultSampleCodec() sample.Codec
 
-	// DefaultBufSize returns the default size of the buffer provided to
-	// the caller for interactions.
+	// DefaultBufSize returns the default size of the buffer in frames provided to
+	// the caller for I/O interactions.
 	DefaultBufSize() int
 
 	// CanOpenSource returns true if OpenSource does not return
@@ -46,8 +46,8 @@ type Entry interface {
 	// OpenSource starts capturing audio.
 	//
 	// dev is the specified device, and should be nil if and only if the current
-	// entry has .DevScanner nil.  Otherwise, dev should be a device returned by
-	// the current entry .DevScan()
+	// entry has .HasDevices().  Otherwise, dev should be a device returned by
+	// the current entry .ScanDevices() or Devices()
 	//
 	// v indicates the desired form (channels, sample rate) of the source.
 	//
@@ -71,8 +71,8 @@ type Entry interface {
 	// OpenSink starts playing audio.
 	//
 	// dev is the specified device, and should be nil if and only if the current
-	// entry has .DevScanner nil.  Otherwise, dev should be a device returned by
-	// the current entry .DevScan()
+	// entry has .HasDevices().  Otherwise, dev should be a device returned by
+	// the current entry via ScanDevices() or Devices().
 	//
 	// v indicates the desired form (channels, sample rate) of the source.
 	//
@@ -85,7 +85,7 @@ type Entry interface {
 	//
 	// OpenSink returns a tuple (s, *t, e) with
 	// s: sound.Sink which represents audio for playback.
-	// t: a pointer to the start time of the first played sample, which is set
+	// *t: a pointer to the start time of the first played sample, which is set
 	//    after the first successful send via the returned sound.Sink.
 	// e: any error
 	//
@@ -94,18 +94,57 @@ type Entry interface {
 
 	// CanOpenDuplex returns true if OpenDuplex does not return ErrUnsupported.
 	CanOpenDuplex() bool
-	// OpenDuplex
-	OpenDuplex(dev *libsio.Dev, iv, ov sound.Form, sco sample.Codec, bufSz int) (sound.Duplex, time.Time, error)
+	// OpenDuplex starts a duplex connection to the host.
+	//
+	// dev is the specified device, and should be nil if and only if the current
+	// entry has .HasDevices().  Otherwise, dev should be a device returned by
+	// the current entry via ScanDevices() or Devices().
+	//
+	// iv, ov represent the form of input and output respectively.
+	//
+	// sco indicates the desired sample.Codec.
+	//
+	// bufSz indicates the size of the buffer, in frames, whose data is
+	// placed in or retreived from a []float64 in Duplex.SendReceive. Implementations
+	// should use a minimal total buffer size to safely accomodate this constraint.
+	//
+	// OpenDuplex returns a quadruple(d, ct, *pt, e) with
+	//
+	//  d a sound.Duplex implementation
+	//  ct the time of the first sample of captured data.
+	//  *pt: a pointer to the time of the first sample of played data.
+	//  e: an error if any while opening the duplex connection.
+	OpenDuplex(dev *libsio.Dev, iv, ov sound.Form, sco sample.Codec, bufSz int) (sound.Duplex, time.Time, *time.Time, error)
 
-	// ScanDevices scans devices
-	ScanDevices() []*DevScanResult
+	// HasDevices returns true if the entry supports the concept of devices.
+	HasDevices() bool
+
+	// ScanDevices scans the host for devices.  It does not use a cache.
+	//
+	// ScanDevices returns a non-nil error if no devices can be scanned.
+	// Errors associated with each device scan are available in the
+	// DevScanResults.
+	ScanDevices() ([]*DevScanResult, error)
+
+	// Devices returns a slice of devices on the host.  The returned list may be cached.
+	// Devices() should call ScanDevices() at least once and cache the resulting slice
+	// of devices subsequently.
 	Devices() []*libsio.Dev
-	DevicesNotify(chan<- *DevChange)
-	// returns nil if no input supported.
+
+	// DevicesNotify  sends notifications of device changes on c.
+	//
+	// DevicesNotify returns ErrUnsupported if the entry does not support
+	// notifications.
+	DevicesNotify(c chan<- *DevChange) error
+
+	// DevicesNotifyClose stops sending device notifications on c.
+	DevicesNotifyClose(c chan<- *DevChange)
+
+	// returns nil if no input supported or HasDevices() is false.
 	DefaultInputDev() *libsio.Dev
-	// returns nil if no output supported.
+	// returns nil if no output supported or HasDevices() is false.
 	DefaultOutputDev() *libsio.Dev
-	// returns nil if no duplex supported.
+	// returns nil if no duplex supported or HasDevices() is false.
 	DefaultDuplexDev() *libsio.Dev
 }
 
@@ -198,7 +237,7 @@ func DuplexWith(e Entry, iv, ov sound.Form, co sample.Codec, b int) (sound.Duple
 		return nil, ErrUnsupported
 	}
 	dev := e.DefaultDuplexDev()
-	dpx, _, err := e.OpenDuplex(dev, iv, ov, co, b)
+	dpx, _, _, err := e.OpenDuplex(dev, iv, ov, co, b)
 	return dpx, err
 }
 
@@ -238,13 +277,14 @@ var hMu sync.Mutex
 var eMu sync.Mutex
 var theEntry Entry
 
-// Get opens the default entry for the host.
+// Connect opens the default entry for the host.
 //
-// Get returns ErrNoEntryAvailable if there are
-// no entries for the host.
+// Connect returns ErrNoEntryAvailable if there are no entries for the host.
 //
-// Get returns ErrEntryInUse if the non-default
-// host entry is in use.
+// Connect returns ErrEntryInUse if a non-default host entry is in use.
+//
+// Connect can be called many times without cost of re-initialising a
+// connection.  Connect can be called in different goroutines.
 func Connect(pkgSel func(string) bool) (Entry, error) {
 	nms := Names()
 	if len(nms) == 0 {
@@ -254,6 +294,14 @@ func Connect(pkgSel func(string) bool) (Entry, error) {
 }
 
 // ConnectTo connects to the named entry.
+//
+// ConnectTo returns ErrNoEntryAvailable if there are no entries for the host.
+//
+// ConnectTo returns ErrEntryInUse if another host entry other than one
+// requested is in use.
+//
+// Connect can be called many times without cost of re-initialising a
+// connection.  Connect can be called in different goroutines.
 func ConnectTo(name string, pkgSel func(string) bool) (Entry, error) {
 	hMu.Lock()
 	defer hMu.Unlock()
@@ -274,6 +322,8 @@ func ConnectTo(name string, pkgSel func(string) bool) (Entry, error) {
 
 // Disconnect disconnects any current entry making
 // other entries available.
+//
+// Disconnect is safe for calling in several goroutines.
 func Disconnect() {
 	hMu.Lock()
 	defer hMu.Unlock()
@@ -290,4 +340,11 @@ func findEntry(s []*entry, pkgSel func(string) bool) Entry {
 		}
 	}
 	return nil
+}
+
+// Names names the sound system entry points for the host.
+func Names() []string {
+	res := make([]string, len(names))
+	copy(res, names[:])
+	return res
 }
