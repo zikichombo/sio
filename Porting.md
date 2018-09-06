@@ -1,11 +1,11 @@
 # Porting Guide
 
-## Ports' Status
+## Status of Ports
 The status of ports is kept in the main module [README](README.md).
 
 ## Overview
 ZikiChombo sio code has a porting process that is unconventional due to the
-nature of sound support on host systems.  Usually, to port a system, on takes some
+nature of sound support on host systems.  Usually, to port a system, one takes some
 desired cross-host functionality, such as a filesystem, and implements it with
 the OS or OS/hardware combination of interest and that's that (to make a long
 story short).
@@ -40,7 +40,7 @@ point than the default.
 There is a directory ZikiChombo/sio/ports/{runtime.GOOS} for each host. 
 
 # Entry Points
-An entry point defines a proper subset of the functionality listed in the main
+An entry point defines a subset of the functionality listed in the main
 [README](README.md).  ZikiChombo defines for each host (runtime.GOOS) a list of
 entry points which refer to the software layer with which the go program will
 communicate.  These are named after the respective entry points in the main
@@ -63,16 +63,16 @@ their init() function.  Consumers of ZikiChombo may optionaly control which
 package implements a given entry point. The default is chosen by 
 package initialisation order.
 
-see [host](http://godoc.org/zikichombo.org/sio/host) for details.
+See [host](http://godoc.org/zikichombo.org/sio/host) for details.
 
 The list of entry names for each host is defined in host/entry_{host}.go
-under the function Names().
+under the function host.Names().
 
 
 # Supporting concepts Devices, Inputs, Outputs, Duplex, Packets
 To implement an Entry Point, ZikiChombo provides some support code in
 [libsio](http://godoc.org/zikichombo.org/sio/libsio).  The only required part
-of this code to reference is libsio/Dev to implement an Entry, and use in
+of this code to reference is libsio/Dev to implement an Entry.  Use in
 addition to referencing libsio.Dev is only required for device related functionality.
 
 Other parts of this code, libsio.{Input,Output,Duplex,Packet,DuplexPacket}
@@ -87,10 +87,10 @@ for registration side effects
 import _ "zikichombo.org/sio/ports/{runtime.GOOS}"
 ```
 
-Packages implementing the entries should import "zikichombo.org/sio/entry" and
+Packages implementing the entries should import "zikichombo.org/sio/host" and
 call 
 ```
-entry.RegisterEntry(mySuperReliableEntry)
+host.RegisterEntry(mySuperReliableEntry)
 ```
 
 These packages may also import zikichombo.org/libsio.

@@ -3,11 +3,9 @@
 [![Build Status](https://travis-ci.com/zikichombo/sio.svg?branch=master)](https://travis-ci.com/zikichombo/sio)
 
 # Usage
-If you are using sio for sound capture and playback, only the following packages
-are relevant.
-
-* [sio](http://godoc.org/zikichombo.org/sio)
-* [host](http://godoc.org/zikichombo.org/sio/host)
+If you are using sio for sound capture and playback, only the [sio](http://godoc.org/zikichombo.org/sio)
+package is needed.  For device scanning and APIs, the [host](http://godoc.org/zikichombo.org/sio/host) 
+package provides the necessary support.
 
 
 # Ports
