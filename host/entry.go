@@ -284,6 +284,12 @@ var theEntry Entry
 //
 // Connect can be called many times without cost of re-initialising a
 // connection.  Connect can be called in different goroutines.
+//
+// The argument pkgSel is used to filter the implementions of
+// an entry point by means of examining their defining package path
+// by reflection.  It should return true if it accepts the
+// implementation.  If pkgSel is nil, Connect acts as though
+// the function body were "return true".
 func Connect(pkgSel func(string) bool) (Entry, error) {
 	nms := Names()
 	if len(nms) == 0 {
@@ -299,8 +305,10 @@ func Connect(pkgSel func(string) bool) (Entry, error) {
 // ConnectTo returns ErrEntryInUse if another host entry other than one
 // requested is in use.
 //
-// Connect can be called many times without cost of re-initialising a
-// connection.  Connect can be called in different goroutines.
+// ConnectTo can be called many times without cost of re-initialising a
+// connection.  ConnectTo can be called in different goroutines.
+//
+// pkgSel is as in Connect.
 func ConnectTo(name string, pkgSel func(string) bool) (Entry, error) {
 	hMu.Lock()
 	defer hMu.Unlock()
