@@ -45,9 +45,9 @@ type Entry interface {
 
 	// OpenSource starts capturing audio.
 	//
-	// dev is the specified device, and should be nil if and only if the current
-	// entry has .HasDevices().  Otherwise, dev should be a device returned by
-	// the current entry .ScanDevices() or Devices()
+	// dev is the specified device, and should be nil if and only if
+	// .HasDevices() is false.  Otherwise, dev should be a device returned by
+	// .ScanDevices() or .Devices().
 	//
 	// v indicates the desired form (channels, sample rate) of the source.
 	//
@@ -60,45 +60,44 @@ type Entry interface {
 	// this constraint.
 	//
 	// OpenSource returns a triple (s, t, e) with
-	// s: sound.Source which represents captured audio.
-	// t: the start time of the first sample.
-	// e: any error
+	//  s: sound.Source which represents captured audio.
+	//  t: the start time of the first sample.
+	//  e: any error
 	OpenSource(dev *libsio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Source, time.Time, error)
 
 	// Can open sink returns true if OpenSink does not return
 	// ErrUnsupported
 	CanOpenSink() bool
+
 	// OpenSink starts playing audio.
 	//
-	// dev is the specified device, and should be nil if and only if the current
-	// entry has .HasDevices().  Otherwise, dev should be a device returned by
-	// the current entry via ScanDevices() or Devices().
+	// dev is the specified device, and should be nil if and only if
+	// .HasDevices() is false.  Otherwise, dev should be a device returned by
+	// .ScanDevices() or .Devices().
 	//
 	// v indicates the desired form (channels, sample rate) of the source.
 	//
 	// sco indicates the desired sample.Codec.
 	//
-	// bufSz indicates the size of buffer whose data is placed
-	// in sound.Source.Receive.  This is normally the size of the part of
-	// the ring buffer exposed for playback.  Implementations should
-	// use a minimal total buffer size to safely accomodate this constraint.
+	// bufSz indicates the size of buffer whose data is placed in
+	// sound.Source.Receive.  This is normally the size of the part of the ring
+	// buffer exposed for playback.  Implementations should use a minimal total
+	// buffer size to safely accomodate this constraint.
 	//
-	// OpenSink returns a tuple (s, *t, e) with
-	// s: sound.Sink which represents audio for playback.
-	// *t: a pointer to the start time of the first played sample, which is set
-	//    after the first successful send via the returned sound.Sink.
-	// e: any error
+	// OpenSink returns a tuple (s, *t, e) with s: sound.Sink which represents
+	// audio for playback.  *t: a pointer to the start time of the first played
+	// sample, which is set after the first successful send via the returned
+	// sound.Sink.  e: any error
 	//
-	// OpenSink should
 	OpenSink(dev *libsio.Dev, v sound.Form, sco sample.Codec, bufSz int) (sound.Sink, *time.Time, error)
 
 	// CanOpenDuplex returns true if OpenDuplex does not return ErrUnsupported.
 	CanOpenDuplex() bool
 	// OpenDuplex starts a duplex connection to the host.
 	//
-	// dev is the specified device, and should be nil if and only if the current
-	// entry has .HasDevices().  Otherwise, dev should be a device returned by
-	// the current entry via ScanDevices() or Devices().
+	// dev is the specified device, and should be nil if and only if
+	// .HasDevices() is false.  Otherwise, dev should be a device returned by
+	// .ScanDevices() or .Devices().
 	//
 	// iv, ov represent the form of input and output respectively.
 	//
