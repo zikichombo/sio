@@ -89,13 +89,36 @@ func DuplexWith(in, out sound.Form, co sample.Codec, b int) (sound.Duplex, error
 	return host.DuplexWith(ent, in, out, co, b)
 }
 
-// Connect tries to return the default connection to the
-// host entry point.
+// Connect returns a connection to the default host sound system entry
+// point "entry".
+//
+// Connect returns ErrNoEntryAvailable if there are no entries for the host.
+//
+// Connect returns ErrEntryInUse if a non-default host entry is in use.
+//
+// Connect can be called many times without cost of re-initialising a
+// connection.  Connect can be called in different goroutines.
+//
+// The argument pkgSel is used to filter the implementions of
+// an entry point by means of examining their defining package path
+// by reflection.  It should return true if it accepts the
+// implementation.  If pkgSel is nil, Connect acts as though
+// the function body were "return true".
 func Connect(pkgSel func(string) bool) (host.Entry, error) {
 	return host.Connect(pkgSel)
 }
 
-// ConnectTo
+// ConnectTo connects to the named host sound system entry point "entry".
+//
+// ConnectTo returns ErrNoEntryAvailable if there are no entries for the host.
+//
+// ConnectTo returns ErrEntryInUse if another host entry other than one
+// requested is in use.
+//
+// ConnectTo can be called many times without cost of re-initialising a
+// connection.  ConnectTo can be called in different goroutines.
+//
+// pkgSel is as in Connect.
 func ConnectTo(name string, pkgSel func(string) bool) (host.Entry, error) {
 	return host.ConnectTo(name, pkgSel)
 }
