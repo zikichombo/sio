@@ -13,6 +13,18 @@ import (
 
 // Dev provides data about an sound device to connect to
 // for input or output.
+//
+// fields may or may not make sense for certain devices and
+// operating systems.
+//
+// All bounds on ranges, and implied supported operations are
+// approximate in the sense that a particular device may
+// not be able to handle certain combinations of number of
+// input channels, output channels, sample codecs, etc.
+//
+// In any event, whenever a device is used in a host.Entry,
+// it may return an error even if the bounds and supplied support
+// in the Dev fields are respected.
 type Dev struct {
 	Id             uint64
 	Name           string
