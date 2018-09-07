@@ -26,7 +26,8 @@ levels of interacting with these layers to coordinate and make secure demands
 related to playing and capturing sound on a device.
 
 To simplify the end use case, we want to make all this transparent to the
-consumer of sio, and let them simply work with sound.{Source,Sink,Duplex}.
+consumer of sio, and let them simply work with sound.{Source,Sink,Duplex}
+via sio.{Capture,Play,Player,Duplex}.
 
 For each Host, ZikiChombo defines a default entry point to accomplish this.
 
@@ -40,7 +41,8 @@ point than the default.
 There is a directory ZikiChombo/sio/ports/{runtime.GOOS} for each host. 
 
 # Entry Points
-An entry point defines a subset of the functionality listed in the main
+An [entry point](http://godoc.org/zikichombo.org/sio/host#Entry) is an
+interface defining a subset of the functionality listed in the main
 [README](README.md).  ZikiChombo defines for each host (runtime.GOOS) a list of
 entry points which refer to the software layer with which the go program will
 communicate.  These are named after the respective entry points in the main
