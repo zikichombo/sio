@@ -143,4 +143,6 @@ The following may be useful references for those considering sio ports.
 * [Pulse Audio](https://en.wikipedia.org/wiki/PulseAudio)
 * [Android Audio](https://source.android.com/devices/audio/terminology)
 * [AudioFlinger](https://android.googlesource.com/platform/frameworks/av/+/109347d421413303eb1678dd9e2aa9d40acf89d2/services/audioflinger/AudioFlinger.cpp)
+* [PortAudio Go Discussion](https://lists.columbia.edu/pipermail/portaudio/2018-September/001508.html)
+* [oboe](https://github.com/google/oboe)
 
