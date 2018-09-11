@@ -90,12 +90,6 @@ means of coordinating the discussion.
         1. [?] Device Scanning
         1. [?] Device Notification
 * Windows
-    1. ASIO 
-        1. [?] Playback
-        1. [?] Capture
-        1. [?] Duplex
-        1. [?] Device Scanning
-        1. [?] Device Notification
     1. Direct Sound
         1. [?] Playback
         1. [?] Capture
