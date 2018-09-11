@@ -63,6 +63,7 @@ means of coordinating the discussion.
         1. [ ] Duplex
         1. [X] Device Scanning
         1. [ ] Test for iOS via RemoteIO replacing AUHAL.
+    1. VPIO [?]
 * Android
     1. TinyALSA
         1. [ ] Playback
