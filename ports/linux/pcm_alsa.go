@@ -20,7 +20,7 @@ import (
 	"zikichombo.org/sound/sample"
 )
 
-// #cgo pkg-config: libasound2-dev
+// #cgo pkg-config: alsa
 // #cgo LDFLAGS: -lasound
 // #include "alsa/asoundlib.h"
 //
