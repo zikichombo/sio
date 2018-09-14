@@ -1,5 +1,9 @@
 language: go
 
+apt:
+  packages:
+    - libasound2-dev
+
 go:
   - "1.10"
   - "tip"
@@ -8,7 +12,9 @@ notifications:
   on_success: false
   on_failure: always
 
-script: go get -t zikichombo.org/sio/...
+install: go get -t zikichombo.org/sio/...
+
+script: go test zikichombo.org/sio/...
 
 
 
