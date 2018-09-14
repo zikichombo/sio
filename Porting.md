@@ -145,4 +145,4 @@ The following may be useful references for those considering sio ports.
 * [AudioFlinger](https://android.googlesource.com/platform/frameworks/av/+/109347d421413303eb1678dd9e2aa9d40acf89d2/services/audioflinger/AudioFlinger.cpp)
 * [PortAudio Go Discussion](https://lists.columbia.edu/pipermail/portaudio/2018-September/001508.html)
 * [oboe](https://github.com/google/oboe)
-
+* [Golang Thread Scheduling Discussion](https://groups.google.com/forum/#!topic/golang-dev/EVwSXv8JTsk)
