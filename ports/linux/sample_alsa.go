@@ -8,6 +8,7 @@ package linux
 
 import "zikichombo.org/sound/sample"
 
+// #cgo pkg-config: libasound2-dev
 // #include "alsa/asoundlib.h"
 import "C"
 
