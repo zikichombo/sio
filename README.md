@@ -65,31 +65,30 @@ means of coordinating the discussion.
         1. [ ] Test for iOS via RemoteIO replacing AUHAL.
     1. VPIO [?]
 * Android
-    1. TinyALSA
-        1. [ ] Playback
-        1. [ ] Capture
-        1. [ ] Duplex
-        1. [?] Device Scanning
-        1. [?] Device Notification
-    1. Android Audio HAL [?]
-    1. AudioFlinger
+    1. Android Audio HAL
         1. [ ] Playback
         1. [ ] Capture
         1. [?] Duplex
-        1. [?] Device Scanning
-        1. [?] Device Notification
+        1. [-] Device Scanning
+        1. [-] Device Notification
     1. AAudio
         1. [ ] Playback
         1. [ ] Capture
         1. [?] Duplex
-        1. [?] Device Scanning
-        1. [?] Device Notification
+        1. [-] Device Scanning
+        1. [-] Device Notification
     1. OpenSL ES
         1. [ ] Playback
         1. [ ] Capture
         1. [?] Duplex
-        1. [?] Device Scanning
-        1. [?] Device Notification
+        1. [-] Device Scanning
+        1. [-] Device Notification
+    1. AudioManager (nb to be used for device scanning in combination with above)
+        1. [-] Playback
+        1. [-] Capture
+        1. [-] Duplex
+        1. [ ] Device Scanning
+        1. [-] Device Notification
 * Windows
     1. Direct Sound
         1. [?] Playback
