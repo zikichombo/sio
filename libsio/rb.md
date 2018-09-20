@@ -46,7 +46,7 @@ times the size of `d` so that one buffer may be in transit while both sides
 treats the other 2 buffers in parallel.
 
 
-# Design characteristics:
+# Design characteristics
 
 To deal with this, we present a ringbuffer in which the elements are
 conceptually atleast pairs 
@@ -61,10 +61,13 @@ passed to the Go side for processing.
 
 The ringbuffer has a write index `wi` and a read index `ri` which must be
 coordinated between C and Go.  These indices indicate where the next write or
-read will occur.  There is also a 'size' variable indicating the number of
-samples between the `ri` and `wi` (circularly ordered).  The 'size' variable is
-atomically synchronised between the two sides.  The read side keeps `ri` and
-the write side keeps `wi`.
+read will occur.  In this design, `wi` is exclusive to the C side 
+and `ri` is exclusive to the Go side.  
+
+There is also a 'size' variable indicating the number of samples between the
+`ri` and `wi` (circularly ordered).  The 'size' variable is atomically
+synchronised between the two sides and may exceed the capacity, indicating
+an xrun.  Neither `ri` nor `wi` ever exceed capacity.
 
 We assume that Go code will encode `pkt` into `buf` for playback encode `buf`
 into `pkt` for capture and for duplex the Go code will first capture then
@@ -114,6 +117,10 @@ for {
     for atomic-load(size) == 0 {
         runtime.GoSched() // or sleep w.r.t deadline, but go's sleeps are pretty chaotic.
     }
+    if size >= cap {
+      // handle overrun
+      return
+    }
     render from rb->bufs[ri] to the packet.
     // ok, we're the only reader.
     atomic-decr(size)
@@ -123,12 +130,10 @@ for {
 ```
 
 ### Overruns
-Overruns may occur already in cb if the C api passes flags indicating there
-are overruns.  Perhaps this could be detected by assigning size to the negation
-of the true size.
-
-It can also happen that size is greater than the capacity of rb.  This would
-indicate the Go code isn't keeping up.
+It can happen that size is greater than the capacity of rb.  This would
+indicate the Go code isn't keeping up.  When this happens, ri should jump
+to the index of the oldest packet as if `size == cap - 1` were true and
+update size according.
 
 
 
@@ -149,6 +154,10 @@ for {
   for atomic-load(size) == 0 {
     runtime.GoSched() // or sleep but go's sleep is quite chaotic
   }
+  if size >= cap {
+    // handle underrun
+    return
+  }
   buf := rb->bufs[rb->ri]
   // NB: duplex can read from buf
   // playback fill the buffer
@@ -159,14 +168,15 @@ for {
 
 ### Underruns
 Again, on the Go side, if size exceeds capacity, then there is an underrun.
-
+In this case, `ri` should be set to where it would be if `size == cap - 1` were
+true and size should be updated to `cap - 1`
 
 ## Duplex
 Duplex follows exactly the pattern of playback.  
 
 ### Xruns 
-In this case if Go doesn't
-keep up then the result is an overrun w.r.t. capture and an underrun w.r.t. playback.
+In this case if Go doesn't keep up then the result is an overrun w.r.t. capture
+and an underrun w.r.t. playback.
 
 
 
