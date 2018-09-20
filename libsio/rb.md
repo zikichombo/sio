@@ -9,8 +9,6 @@ they often run on dedicated threads which cause cgo->go callback overhead:  a
 lot on first call, and it seems atleast, sigaltstack on all calls, which
 invokes a system call and hence is inappropriate.
 
-Since callbacks are on real-time, sigaltstack is inappropriate.
-
 Go is a nice fit for providing a blocking API.  We want to map a blocking api
 for example a call to 
 
@@ -49,13 +47,13 @@ treats the other 2 buffers in parallel.
 # Design characteristics
 
 To deal with this, we present a ringbuffer in which the elements are
-conceptually atleast pairs 
+(conceptually atleast) triples 
 
 ```
 (out *C.void, in *C.void, pkt *libsio.Packet)
 ```
 
-These pairs maintain the invariant that `pkt` is used exclusively on the Go side
+These triples maintain the invariant that `pkt` is used exclusively on the Go side
 and (`in`, `out`) are C allocated memory provided by the underlying API to `cb` and
 passed to the Go side for processing.
 
@@ -140,9 +138,8 @@ Note that in this design, overruns can happen undetected while Go code is runnin
 but they will be detected on subsequent runs.  This is not true of playback/capture
 where the C callback waits for Go to finish so long as the underlying API
 disallows multiple calls to the callback at once.  It may be prudent to 
-add this to capture as well.
-
-
+add this to capture as well, but it would prevent the C API from allowing 
+sizes other than 0 or 1.
 
 ## Playback
 C side:
