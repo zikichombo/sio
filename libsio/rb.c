@@ -7,16 +7,9 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <stdint.h>
 
-typedef struct Rb {
-	int ri;
-	int wi;
-	_Atomic int size;
-	int nb;
-	int bufSz;
-	void ** ins;  
-	void ** outs;
-} Rb;
+#include "rb.h"
 
 
 Rb * newRb(int nb, int bufSz) {
@@ -63,6 +56,15 @@ void incRi(Rb *rb) {
 	}
 }
 
+void * getIn(Rb *rb) {
+	return rb->ins[rb->ri];
+}
+
+void * getOut(Rb *rb) {
+	return rb->outs[rb->ri];
+}
+
+
 /*
  From Ian Lance Taylor: in C11 stdatomic terms Go atomic.CompareAndSwap is like
 atomic_compare_exchange_weak_explicit(p, &old, new,
@@ -81,8 +83,8 @@ control an airplane.  But for audio, we'll give it a shot.
  */
 void inCb(Rb *rb, void *in) {
 	rb->ins[rb->wi] = in;
-	_Atomic int * szp = &rb->size;
-	int sz; 
+	_Atomic uint32_t * szp = &rb->size;
+	uint32_t sz; 
 	for (;;) {
 		sz = rb->size;
 		if (atomic_compare_exchange_weak_explicit(szp, &sz, sz+1, memory_order_acq_rel, memory_order_relaxed)) {
@@ -94,8 +96,8 @@ void inCb(Rb *rb, void *in) {
 
 void outCb(Rb *rb, void *out) {
 	rb->outs[rb->wi] = out;
-	_Atomic int * szp = &rb->size;
-	int sz; 
+	_Atomic uint32_t * szp = &rb->size;
+	uint32_t sz; 
 	for (;;) {
 		sz = rb->size;
 		if (atomic_compare_exchange_weak_explicit(szp, &sz, sz+1, memory_order_acq_rel, memory_order_relaxed)) {
@@ -116,8 +118,8 @@ void outCb(Rb *rb, void *out) {
 void duplexCb(Rb *rb, void *out, void *in) {
 	rb->ins[rb->wi] = in;
 	rb->outs[rb->wi] = out;
-	_Atomic int * szp = &rb->size;
-	int sz; 
+	_Atomic uint32_t * szp = &rb->size;
+	uint32_t sz; 
 	for (;;) {
 		sz = rb->size;
 		if (atomic_compare_exchange_weak_explicit(szp, &sz, sz+1, memory_order_acq_rel, memory_order_relaxed)) {
