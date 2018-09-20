@@ -1,7 +1,4 @@
 // +build cgo
-// +build ignore
-//
-// we need gcc 4.9 on travis for this, which I don't have time to set up just yet.
 
 package libsio
 
