@@ -11,14 +11,15 @@
 typedef struct Rb {
 	int ri;
 	int wi;
-	volatile int size;
-	int cap;
+	_Atomic int size;
+	int nb;
 	int bufSz;
-	void ** bufs;  // C memory
+	void ** ins;  
+	void ** outs;
 } Rb;
 
 
-Rb * newRb(int rbSz, int bufSz) {
+Rb * newRb(int nb, int bufSz) {
 	Rb * rb = (Rb*) malloc(sizeof(Rb));
 	if (rb == 0) {
 		return rb;  // Go code will call and must check.
@@ -26,50 +27,38 @@ Rb * newRb(int rbSz, int bufSz) {
 	rb->ri = 0;
 	rb->wi = 0;
 	rb->size = 0;
-	rb->cap = rbSize;
+	rb->nb = nb;
 	rb->bufSz = bufSz;
-	rb->bufs = (char **) malloc(sizeof(char*) * rbSz);
-	if (rb->bufs == 0) {
+	rb->ins = (void **) calloc(sizeof(void*),  nb);
+	if (rb->ins == 0) {
 		free(rb);
 		return 0;
 	}
-	// TBD: allocate once and compute pointer offsets to avoid fragmentation
-	// of memory backing bufs.
-	for (int i = 0; i < rbSz; i++) {
-		rb->bufs[i] = (char *) calloc(sizeof(char), bufSz);
-		if (rb->bufs[i] == 0) {
-			for (int j=0; j < i; j++) {
-				free(rb->bufs[j]);
-			}
-			free(rb->bufs);
-			free(rb);
-			return 0;
-		}
+	rb->outs = (void **) calloc(sizeof(void*), nb);
+	if (rb->outs == 0) {
+		free(rb->ins);
+		free(rb);
+		return 0;
 	}
 	return rb;
 }
 
-void freeRb(rb *Rb) {
-	for (int i = 0; i < rb->cap; i++) {
-		free(rb->bufs[i]);
-	}
-	free(rb->bufs);
+void freeRb(Rb *rb) {
+	free(rb->ins);
+	free(rb->outs);
 	free(rb);
 }
 
-void primePlay(rb *Rb) {
-}
-
-void incWi(rb *Rb) {
+void incWi(Rb *rb) {
 	rb->wi++;
-	if (rb->wi == rb->cap) {
+	if (rb->wi == rb->nb) {
 		rb->wi = 0;
 	}
 }
 
-void incRi(rb *Rb) {
+void incRi(Rb *rb) {
 	rb->ri++;
-	if (rb->ri == rb->cap) {
+	if (rb->ri == rb->nb) {
 		rb->ri = 0;
 	}
 }
@@ -84,17 +73,15 @@ control an airplane.  But for audio, we'll give it a shot.
 */
 
 /*
- * inRb reads dat into the buffer, advancing the buffer write index.  It
+ * inCb reads dat into the buffer, advancing the buffer write index.  It
  * spins until there is space.
  *
- * inRb is written to be called in an audio i/o callback API, as described
+ * inCb is written to be called in an audio i/o callback API, as described
  * in rb.md, for capture.
  */
-void inRb(rb *Rb, void *dat) {
-	/* TBD: don't allocate memory, just use the passed dat and place it in tb->bufs[rb->wi] */
-	void * buf = rb->bufs[rb->wi];
-	memcpy(buf, dat, rb->bufSz);
-	volatile int * szp = &rb->size;
+void inCb(Rb *rb, void *in) {
+	rb->ins[rb->wi] = in;
+	_Atomic int * szp = &rb->size;
 	int sz; 
 	for (;;) {
 		sz = rb->size;
@@ -105,8 +92,49 @@ void inRb(rb *Rb, void *dat) {
 	incWi(rb);
 }
 
-void outRb(rb *Rb, void *dat) {
+void outCb(Rb *rb, void *out) {
+	rb->outs[rb->wi] = out;
+	_Atomic int * szp = &rb->size;
+	int sz; 
+	for (;;) {
+		sz = rb->size;
+		if (atomic_compare_exchange_weak_explicit(szp, &sz, sz+1, memory_order_acq_rel, memory_order_relaxed)) {
+			break;
+		}
+	}
+	sz++;
+	int cmp;
+	for (;;) {
+		cmp = atomic_load_explicit(szp, memory_order_acquire);
+		if (cmp != sz) {
+			break;
+		}
+	}
+	incWi(rb);
 }
+
+void duplexCb(Rb *rb, void *out, void *in) {
+	rb->ins[rb->wi] = in;
+	rb->outs[rb->wi] = out;
+	_Atomic int * szp = &rb->size;
+	int sz; 
+	for (;;) {
+		sz = rb->size;
+		if (atomic_compare_exchange_weak_explicit(szp, &sz, sz+1, memory_order_acq_rel, memory_order_relaxed)) {
+			break;
+		}
+	}
+	sz++;
+	int cmp;
+	for (;;) {
+		cmp = atomic_load_explicit(szp, memory_order_acquire);
+		if (cmp != sz) {
+			break;
+		}
+	}
+	incWi(rb);
+}
+
 
 
 
