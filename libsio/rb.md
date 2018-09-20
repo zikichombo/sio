@@ -133,12 +133,6 @@ indicate the Go code isn't keeping up.
 
 
 ## Playback
-
-"size" is actually the size of available buffers to send to app for filling
-initially it is the size of the queue. 
-
-This needs initialization detection added on C side
-
 C side:
 ```
 rb->bufs[wi] = dat
