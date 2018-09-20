@@ -22,7 +22,7 @@ s.Receive(d)
 
 to be implemented in terms of a callback C API, roughly
 ```
-int cb(void *dat, ...)
+int cb(void *out, void *in, ...)
 ```
 
 where cb is called, presumably on a foreign thread in a way
@@ -30,7 +30,7 @@ that is clocked to synchronize with the number of frames
 in `d` and either 
 1. requests the caller to copy buf for subsequent treatment of captured data; or
 1. requests the caller to fill buf for subsequent playback; or
-1. requests the caller to do both, in order.
+1. requests the caller to do both.
 
 
 In sio, we have assumed the user may only specify the desired buffer size of
@@ -52,11 +52,11 @@ To deal with this, we present a ringbuffer in which the elements are
 conceptually atleast pairs 
 
 ```
-(buf *C.char, pkt *libsio.Packet)
+(out *C.void, in *C.void, pkt *libsio.Packet)
 ```
 
 These pairs maintain the invariant that `pkt` is used exclusively on the Go side
-and `buf` is C allocated memory provided by the underlying API to `cb` and
+and (`in`, `out`) are C allocated memory provided by the underlying API to `cb` and
 passed to the Go side for processing.
 
 The ringbuffer has a write index `wi` and a read index `ri` which must be
@@ -69,10 +69,10 @@ There is also a 'size' variable indicating the number of samples between the
 synchronised between the two sides and may exceed the capacity, indicating
 an xrun.  Neither `ri` nor `wi` ever exceed capacity.
 
-We assume that Go code will encode `pkt` into `buf` for playback encode `buf`
-into `pkt` for capture and for duplex the Go code will first capture then
-playback.  A processing chain may do more, but is outside the scope of sio for
-the time being.
+We assume that Go code will encode `pkt` into `out` for playback and encode
+`in` into `pkt` for capture and that in a duplex setting the Go code will do
+both.  A processing chain may do more, but is outside the scope of sio for the
+time being.
 
 There are many combinations worth noting.  In the following, we consider
 "reliability" w.r.t. OS scheduling overhead and Go GC.  The latter looks good.
@@ -88,7 +88,8 @@ Audio Device HAL, or JACK. We would expect equivalent latency reliability modulo
 1. Same as above, but Go code is not specially OS scheduled for audio.  In this case,
 we would expect an increase in glitching under non-dedicated hardware or system load.
 1. The ringbuffer or similar is implemented by a higher level C API and coordinated
-with a lower level C and/or OS API.
+with a lower level C and/or OS API.  This is the case where Go interfaces AAudio
+or Audio Units rather than the respective lower level HAL.
 In this case, there would be an extra layer of coordination between Go and the OS, 
 but it would not increase latency in terms of buffering of samples, because each encoding
 or decoding by Go would happen in the same real time slot as it would in a callback.
@@ -105,7 +106,7 @@ but the latency in terms of sample buffering would be the same.
 in C cb, we would have roughly
 
 ```
-rb->[wi] = dat
+rb->ins[wi] = dat
 atomic-incr(size)
 incWi(rb)
 ```
@@ -135,15 +136,21 @@ indicate the Go code isn't keeping up.  When this happens, ri should jump
 to the index of the oldest packet as if `size == cap - 1` were true and
 update size according.
 
+Note that in this design, overruns can happen undetected while Go code is running,
+but they will be detected on subsequent runs.  This is not true of playback/capture
+where the C callback waits for Go to finish so long as the underlying API
+disallows multiple calls to the callback at once.  It may be prudent to 
+add this to capture as well.
+
 
 
 ## Playback
 C side:
 ```
-rb->bufs[wi] = dat
-new = atomic-incr(size)
+rb->outs[wi] = out;
+new = atomic-incr(size);
 while(atomic-load(size) == new) {}
-incWi(rb)
+incWi(rb);
 // dat now contains data for playback, fournished by Go.  Return.
 ```
 
@@ -172,7 +179,9 @@ In this case, `ri` should be set to where it would be if `size == cap - 1` were
 true and size should be updated to `cap - 1`
 
 ## Duplex
-Duplex follows exactly the pattern of playback.  
+Duplex follows exactly the pattern of playback, except that
+- The C code records `in` and `out`.
+- The Go code processes both.
 
 ### Xruns 
 In this case if Go doesn't keep up then the result is an overrun w.r.t. capture
@@ -180,4 +189,63 @@ and an underrun w.r.t. playback.
 
 
 
+# Discussion
+## Latency
+To discuss latency, we introduce the notion of _exposed_ and _unexposed_ 
+portions of an Rb.  The exposed portion is the part that Go code has
+the right to process when there is no xrun.  The unexposed portion is the
+rest of the buffer.  For simplicity, we consider these to be disjoint 
+sets whose union equals the entire Rb at all points in time.  In practice
+this is only true in the critical sections of the C side and Go side, and
+thus not true at all points in time.
 
+
+### Capture
+The minimum capture latency between the return of a blocking call and the start
+time of the first sample frame returned is 1 buffer worth of time.  For this to
+happen, it must be that the computation to synchronise the callback and the Go
+code is small enough to represent effectively 0 time with respect to the
+time scale granularity. 
+
+The maximum capture latency on non-xrun calls fully determined by the capacity,
+or time represented by the exposed part plus time represented by the unexposed
+part.  This occurs when the the size atomic variable is at capacity, but not
+always.  It may be that the underlying API is operating in parallel with the
+Go code.  In this case, the latency is somewhere between the time 
+represented by the unexposed part and the total time represented by the Rb.
+
+The analysis with respect to the start time of the blocking call is somewhat
+looser since work may not be done by Rb for some time. 
+
+### Playback 
+The minimum playback latency between the return of a blocking call and
+the output of the first sample is 0.
+
+The maximum playback latency between the return of a blocking call and
+the output of the first sample is the time represented by the unexposed
+portion of Rb.
+
+The analysis with respect to the start of blocking calls is looser 
+as in capture.
+
+### Duplex
+Duplex latency should be exactly as capture and playback latency respectively.
+
+
+## Buffer sizes
+Many APIs (eg ALSA, AAudio)  give the user the ability to control something
+corresponding to the rb capacity in this document.  (buffer size in ALSA vs
+period, AAudio buffer capacity).  
+
+This is complicated and can produce situations where there is a lot of 
+computation with no gain in latency.  We simplify the interface so that 
+the caller may use larger buffers for more latency and less computation
+and smaller buffers for less latency and more computation.  This does
+not come at an expense of best case latency, but it does mean the
+caller cannot choose the bounds on latency in xrun-free cases.
+
+On the other hand, having a separate parameter for Rb capacity can produce
+problems when the underlying API is not capable of providing the requested
+buffer size.  TBD: figure out what to do for this case.  In any case, 
+we can either effectuate the i/o with more risk of jitter or put the burden
+of finding the buffer size on the user, or allow for both.
