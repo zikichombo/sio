@@ -72,21 +72,25 @@ We assume that Go code will encode `pkt` into `out` for playback and encode
 both.  A processing chain may do more, but is outside the scope of sio for the
 time being.
 
-There are many combinations worth noting.  In the following, we consider
-"reliability" w.r.t. OS scheduling overhead and Go GC.  The latter looks good.
-Dealing with the former is the whole reason for designing and implementing
-this.  In practice, there is a sweet spot between reliability and latency:  you
-can reduce the latency to the level where it is sufficiently reliable for your
-use case.  The cases are enumerated below.
+### OS Scheduling
+In the following, we consider "reliability" w.r.t. OS scheduling overhead and Go GC.  
+The latter looks good.  Dealing with the former is the whole reason for
+designing and implementing this.  In practice, there is a sweet spot between
+reliability and latency:  you can reduce the latency to the level where it is
+sufficiently reliable for your use case.  We consider a few cases below.  Note
+that here, `data buffer` refers to the actual C API level memory used to store samples,
+and is distinct from `rb` where we place only pointers in a ringbuffer-like 
+datastructure.
 
-1. The ringbuffer is hardware/low level OS priveleged and Go is on a specially
-scheduled thread.  In this case, the implementation is the same w.r.t. 
+1. The data buffer is hardware/low level OS priveleged and Go is on a or some specially
+scheduled thread(s).  In this case, the implementation is the same w.r.t. 
 OS scheduling as say AAudio on top of Android HAL or AUHAL on top of CoreAudio's 
 Audio Device HAL, or JACK. We would expect equivalent latency reliability modulo Go garbage collection.
 1. Same as above, but Go code is not specially OS scheduled for audio.  In this case,
-we would expect an increase in glitching under non-dedicated hardware or system load.
+we would expect an increase in glitching under non-dedicated hardware or system load
+as compared to systems which do use specially scheduled threads.
 1. The ringbuffer or similar is implemented by a higher level C API and coordinated
-with a lower level C and/or OS API.  This is the case where Go interfaces AAudio
+with a lower level C and/or OS API.  This is the case, for example, where Go interfaces AAudio
 or Audio Units rather than the respective lower level HAL.
 In this case, there would be an extra layer of coordination between Go and the OS, 
 but it would not increase latency in terms of buffering of samples, because each encoding
@@ -194,7 +198,15 @@ the right to process when there is no xrun.  The unexposed portion is the
 rest of the buffer.  For simplicity, we consider these to be disjoint 
 sets whose union equals the entire Rb at all points in time.  In practice
 this is only true in the critical sections of the C side and Go side, and
-thus not true at all points in time.
+only when there are no xruns.  This is thus not true at all points in time.
+
+### Device latency
+Any device which takes as input PCM data and plays it or which records
+and produces PCM data has some latency between the point in time when
+the physical I/O occurs and the corresponding time of a sample frame. 
+In the following, we ignore this entirely as at any rate it is completely
+out of control of software and also the latency is usually far less than
+that induced by software.
 
 
 ### Capture
@@ -202,7 +214,7 @@ The minimum capture latency between the return of a blocking call and the start
 time of the first sample frame returned is 1 buffer worth of time.  For this to
 happen, it must be that the computation to synchronise the callback and the Go
 code is small enough to represent effectively 0 time with respect to the
-time scale granularity. 
+desired time scale granularity. Given processor speeds, this is at least possible.
 
 The maximum capture latency on non-xrun calls fully determined by the capacity,
 or time represented by the exposed part plus time represented by the unexposed
@@ -212,7 +224,14 @@ Go code.  In this case, the latency is somewhere between the time
 represented by the unexposed part and the total time represented by the Rb.
 
 The analysis with respect to the start time of the blocking call is somewhat
-looser since work may not be done by Rb for some time. 
+looser since work may not be done by Rb for some time.   However, when this 
+is the case it is either because 
+1. no data is available from the lower
+level, in which case latency from start of call doesn't make much sense; or
+1. time synchronising.  In this case the latency may be a concern to the caller.
+However, in almost all cases, including low latency cases, the computation 
+time is very low and time synchronising will be a function of OS scheduling
+setup (described above) and system load.
 
 ### Playback 
 The minimum playback latency between the return of a blocking call and
