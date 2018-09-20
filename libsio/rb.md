@@ -1,18 +1,18 @@
 # Ring Buffer connecting Go and C
 
-this document contains some (still buggy) thoughts on
-using atomic to synchronise hardware sound buffers with
-go slices/libsio.Packet in callback based sound APIs.
+this document contains some (still buggy) thoughts on using atomic to
+synchronise hardware sound buffers with go slices/libsio.Packet in callback
+based sound APIs.
 
-Callback C APIs are very common in sound and very problematic
-for Go because they often run on dedicated threads which
-cause cgo->go callback overhead:  a lot on first call, and 
-it seems atleast, sigaltstack on other calls.  
+Callback C APIs are very common in sound and very problematic for Go because
+they often run on dedicated threads which cause cgo->go callback overhead:  a
+lot on first call, and it seems atleast, sigaltstack on all calls, which
+invokes a system call and hence is inappropriate.
 
 Since callbacks are on real-time, sigaltstack is inappropriate.
 
-Go is a nice fit for providing a blocking API.  We want to
-map a blocking api for example a call to 
+Go is a nice fit for providing a blocking API.  We want to map a blocking api
+for example a call to 
 
 ```
 var d []float64
@@ -22,7 +22,7 @@ s.Receive(d)
 
 to be implemented in terms of a callback C API, roughly
 ```
-int cb(void *buf, ...)
+int cb(void *dat, ...)
 ```
 
 where cb is called, presumably on a foreign thread in a way
@@ -33,50 +33,55 @@ in `d` and either
 1. requests the caller to do both, in order.
 
 
-In sio, we have assumed the user may only specify the desired
-buffer size of `d` in frames.  In practice, behind this, there
-is some ringbuffer which `buf` points to with `nF` frames
-of data available, and the other part of the ringbuffer 
-being filled or coordinated with the hardware or lower level API.
+In sio, we have assumed the user may only specify the desired buffer size of
+`d` in frames.  In practice, behind this, there is some ringbuffer which `buf`
+points to with `nF` frames of data available, and the other part of the
+ringbuffer being filled or coordinated with the hardware or lower level API.
 
-Depending on the implemented mechanism, the size of the underlying
-ring buffer may vary and effect latency.  For example, for double
-buffering, the size of the underlying ringbuffer would would be 2 times
-the size of `d`.  In a less synchronized context, the size might be 3 times
-the size of `d` so that one buffer may be in transit while both sides treats
-the other 2 buffers in parallel.
+Depending on the implemented mechanism, the size of the underlying ring buffer
+may vary and effect latency.  For example, for double buffering, the size of
+the underlying ringbuffer would would be 2 times the size of `d`.  In a less
+synchronized context, such as Apple's audio queue services the size might be 3
+times the size of `d` so that one buffer may be in transit while both sides
+treats the other 2 buffers in parallel.
 
 
 # Design characteristics:
 
-To deal with this, we present a ringbuffer in which the elements
-are pairs 
+To deal with this, we present a ringbuffer in which the elements are
+conceptually atleast pairs 
 
 ```
 (buf *C.char, pkt *libsio.Packet)
 ```
 
-The ringbuffer has a write index `wi` and a read index `ri` which must be coordinated between C and Go.
-These indices indicate where the next write or read will occur.  There is also a 'size' variable
-indicating the number of samples between the `ri` and `wi` (circularly ordered).
-The 'size' variable is atomically synchronised between the two sides.  The read side 
-keeps `ri` and the write side keeps `wi`.
+These pairs maintain the invariant that `pkt` is used exclusively on the Go side
+and `buf` is C allocated memory provided by the underlying API to `cb` and
+passed to the Go side for processing.
 
-We assume that Go code will encode `pkt` into `buf` for playback and `buf` into `pkt`
-for capture.  The duplex case is similar.  A processing chain may do more, but is
-outside the scope of sio for the time being.
+The ringbuffer has a write index `wi` and a read index `ri` which must be
+coordinated between C and Go.  These indices indicate where the next write or
+read will occur.  There is also a 'size' variable indicating the number of
+samples between the `ri` and `wi` (circularly ordered).  The 'size' variable is
+atomically synchronised between the two sides.  The read side keeps `ri` and
+the write side keeps `wi`.
 
-There are many combinations worth noting.  In the following, we consider "reliability" 
-w.r.t. OS scheduling overhead and Go GC.  The latter looks good.  Dealing with the
-former is the whole reason for designing and implementing this.  In practice, there
-is a sweet spot between reliability and latency:  you can reduce the latency to the
-level where it is sufficiently reliable for your use case.  The cases are enumerated
-below.
+We assume that Go code will encode `pkt` into `buf` for playback encode `buf`
+into `pkt` for capture and for duplex the Go code will first capture then
+playback.  A processing chain may do more, but is outside the scope of sio for
+the time being.
+
+There are many combinations worth noting.  In the following, we consider
+"reliability" w.r.t. OS scheduling overhead and Go GC.  The latter looks good.
+Dealing with the former is the whole reason for designing and implementing
+this.  In practice, there is a sweet spot between reliability and latency:  you
+can reduce the latency to the level where it is sufficiently reliable for your
+use case.  The cases are enumerated below.
 
 1. The ringbuffer is hardware/low level OS priveleged and Go is on a specially
 scheduled thread.  In this case, the implementation is the same w.r.t. 
 OS scheduling as say AAudio on top of Android HAL or AUHAL on top of CoreAudio's 
-Audio Device HAL, and we would expect equivalent latency reliability modulo Go garbage collection.
+Audio Device HAL, or JACK. We would expect equivalent latency reliability modulo Go garbage collection.
 1. Same as above, but Go code is not specially OS scheduled for audio.  In this case,
 we would expect an increase in glitching under non-dedicated hardware or system load.
 1. The ringbuffer or similar is implemented by a higher level C API and coordinated
@@ -94,12 +99,12 @@ but the latency in terms of sample buffering would be the same.
 
 ## Capture
 
-in C, we would have roughly
+in C cb, we would have roughly
 
 ```
-render to rb[wi].cBuf,
+rb->[wi] = dat
 atomic-incr(size)
-wi++
+incWi(rb)
 ```
 
 Go side:
@@ -109,28 +114,22 @@ for {
     for atomic-load(size) == 0 {
         runtime.GoSched() // or sleep w.r.t deadline, but go's sleeps are pretty chaotic.
     }
-    if size > cap {
-         error()
-    }
-    render from rb[ri].cBuf to rb[ri].Packet
+    render from rb->bufs[ri] to the packet.
     // ok, we're the only reader.
     atomic-decr(size)
-    ri++
-    // send packet
+    incRi(rb)
+    // send packet or return to caller.
 }
 ```
 
+### Overruns
+Overruns may occur already in cb if the C api passes flags indicating there
+are overruns.  Perhaps this could be detected by assigning size to the negation
+of the true size.
 
-### Memory copies
-Note this requires 2 copies/moves of memory rather than 1 if the data is not in
-floating point format.  However, extra functionality is also provided: we get
-floats for and sample format/codec.  In systems which do processing, floats are
-the most likely representation and would have to be done eventually anyway.  By
-including the conversion here, we guarantee that no latency overhead would be
-needed to do it later.  As sio is for sound processing and i/o, this seems
-reasonable.
+It can also happen that size is greater than the capacity of rb.  This would
+indicate the Go code isn't keeping up.
 
-TBD: see if we can just reference the underlying buffer directly.
 
 
 ## Playback
@@ -141,54 +140,39 @@ initially it is the size of the queue.
 This needs initialization detection added on C side
 
 C side:
-  copy buf to driver buf
-  zero buf
-  atomic-incr(size)
+```
+rb->bufs[wi] = dat
+new = atomic-incr(size)
+while(atomic-load(size) == new) {}
+incWi(rb)
+// dat now contains data for playback, fournished by Go.  Return.
+```
 
 Go side:
 
 ```
-atomic-load(size) // record starting size, at first, it is silence.
 for {
-  send packet
-  receive packet
-  for {
-    if atomic-load(size) != 0 {
-      break
-    }
+  for atomic-load(size) == 0 {
     runtime.GoSched() // or sleep but go's sleep is quite chaotic
   }
-  encode packet to buf
-  atomic decr(size)
+  buf := rb->bufs[rb->ri]
+  // NB: duplex can read from buf
+  // playback fill the buffer
+  incRi(rb)
+  atomic-decr(size)
 }
 ```
+
+### Underruns
+Again, on the Go side, if size exceeds capacity, then there is an underrun.
+
 
 ## Duplex
-in C, we would have roughly
+Duplex follows exactly the pattern of playback.  
 
-```
-render to rb[wi].cBuf,
-atomic-incr(size)
-wi++
-```
-
-Go side:
-
-```
-for {
-    for atomic-load(size) == 0 {
-        runtime.GoSched() // or sleep w.r.t deadline, but go's sleeps are pretty chaotic.
-    }
-    if size > cap {
-         error()
-    }
-    render from rb[ri].cBuf to rb[ri].Packet
-    // ok, we're the only reader.
-    atomic-decr(size)
-    ri++
-    // send packet
-}
-```
+### Xruns 
+In this case if Go doesn't
+keep up then the result is an overrun w.r.t. capture and an underrun w.r.t. playback.
 
 
 
