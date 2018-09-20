@@ -20,14 +20,18 @@ s, _ := sio.Capture()
 s.Receive(d)
 ```
 
-to a callback C API, roughly
+to be implemented in terms of a callback C API, roughly
 ```
-int cb(void *buf...)
+int cb(void *buf, ...)
 ```
 
 where cb is called, presumably on a foreign thread in a way
 that is clocked to synchronize with the number of frames
-in `d`.
+in `d` and either 
+1. requests the caller to copy buf for subsequent treatment of captured data; or
+1. requests the caller to fill buf for subsequent playback; or
+1. requests the caller to do both, in order.
+
 
 In sio, we have assumed the user may only specify the desired
 buffer size of `d` in frames.  In practice, behind this, there
@@ -36,7 +40,11 @@ of data available, and the other part of the ringbuffer
 being filled or coordinated with the hardware or lower level API.
 
 Depending on the implemented mechanism, the size of the underlying
-ring buffer may vary and effect latency.
+ring buffer may vary and effect latency.  For example, for double
+buffering, the size of the underlying ringbuffer would would be 2 times
+the size of `d`.  In a less synchronized context, the size might be 3 times
+the size of `d` so that one buffer may be in transit while both sides treats
+the other 2 buffers in parallel.
 
 
 # Design characteristics:
@@ -96,21 +104,24 @@ wi++
 
 Go side:
 
-- for {
-    if atomic-load(size) > 0 {
-      break 
+```
+for {
+    for atomic-load(size) == 0 {
+        runtime.GoSched() // or sleep w.r.t deadline, but go's sleeps are pretty chaotic.
     }
-    runtime.GoSched() // or sleep w.r.t deadline
-  }
-  if size > cap {
-     error()
-  }
-  render from rb[ri].cBuf to rb[ri].Packet
-  // ok, we're the only reader.
-  atomic-decr(size)
-  ri++
-  // send packet
+    if size > cap {
+         error()
+    }
+    render from rb[ri].cBuf to rb[ri].Packet
+    // ok, we're the only reader.
+    atomic-decr(size)
+    ri++
+    // send packet
+}
+```
 
+
+### Memory copies
 Note this requires 2 copies/moves of memory rather than 1 if the data is not in
 floating point format.  However, extra functionality is also provided: we get
 floats for and sample format/codec.  In systems which do processing, floats are
@@ -119,13 +130,13 @@ including the conversion here, we guarantee that no latency overhead would be
 needed to do it later.  As sio is for sound processing and i/o, this seems
 reasonable.
 
+TBD: see if we can just reference the underlying buffer directly.
+
+
 ## Playback
 
 "size" is actually the size of available buffers to send to app for filling
-initially it is the size of the queue.  It is usually a small number, for 
-example in [0...2) for double buffering or in [0..3) for allowing for
-a packet to be in communication while one side is being read and the other
-written.
+initially it is the size of the queue. 
 
 This needs initialization detection added on C side
 
@@ -135,28 +146,50 @@ C side:
   atomic-incr(size)
 
 Go side:
-  atomic-load(size) // record starting size, at first, it is silence.
+
+```
+atomic-load(size) // record starting size, at first, it is silence.
+for {
+  send packet
+  receive packet
   for {
-      send packet
-      receive packet
-      for {
-        if atomic-load(size) != 0 {
-          break
-        }
-        runtime.GoSched()
-      }
-      encode packet to buf
-      atomic decr(size)
+    if atomic-load(size) != 0 {
+      break
+    }
+    runtime.GoSched() // or sleep but go's sleep is quite chaotic
   }
+  encode packet to buf
+  atomic decr(size)
+}
+```
 
 ## Duplex
+in C, we would have roughly
 
-2 queues: one for play, one for capture, same size
+```
+render to rb[wi].cBuf,
+atomic-incr(size)
+wi++
+```
 
-C callback: in output callback, calls render then
-does C side of capture
+Go side:
 
-Go side, waits for available capture, sends out captured packet,
-and then waits for corresponding output packet.  Upon receit, it 
+```
+for {
+    for atomic-load(size) == 0 {
+        runtime.GoSched() // or sleep w.r.t deadline, but go's sleeps are pretty chaotic.
+    }
+    if size > cap {
+         error()
+    }
+    render from rb[ri].cBuf to rb[ri].Packet
+    // ok, we're the only reader.
+    atomic-decr(size)
+    ri++
+    // send packet
+}
+```
+
+
 
 
