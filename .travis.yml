@@ -3,8 +3,6 @@ language: go
 apt:
   packages:
     - libasound2-dev
-    - gcc-4.9
-
 go:
   - "1.10"
   - "tip"
@@ -13,9 +11,8 @@ notifications:
   on_success: false
   on_failure: always
 
-install: sudo apt-get install libasound2-dev && sudo apt-get install gcc-4.9 && CFLAGS="std=gnu11" go get -t zikichombo.org/sio/...
+install: sudo apt-get install libasound2-dev && go get -t zikichombo.org/sio/...
 
-env: CFLAGS="std=gnu11"
 script: go test zikichombo.org/sio/...
 
 

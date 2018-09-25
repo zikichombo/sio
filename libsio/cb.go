@@ -2,6 +2,7 @@
 
 package libsio
 
+// #cgo CFLAGS: -std=c11
 // #include "cb.h"
 import "C"
 import (
