@@ -71,7 +71,7 @@ The list of entry names for each host is defined in host/entry_{host}.go
 under the function host.Names().
 
 
-# Supporting concepts Devices, Inputs, Outputs, Duplex, Packets
+# Supporting concepts Devices, Inputs, Outputs, Duplex, Packets, Cbs
 To implement an Entry Point, ZikiChombo provides some support code in
 [libsio](http://godoc.org/zikichombo.org/sio/libsio).  The only required part
 of this code to reference is libsio/Dev to implement an Entry. 
@@ -79,6 +79,13 @@ of this code to reference is libsio/Dev to implement an Entry.
 Other parts of this code, libsio.{Input,Output,Duplex,Packet,DuplexPacket}
 provide interfaces for synchronising with the host via Go channels and
 implementations to adapt these structures to sound.{Source,Sink,Duplex}.
+
+There is also a libsio.Cb, which is a mechanism for interfacing
+the blocking calls in sound.{Source,Sink,Duplex} to lower level
+callback interfaces in C.  Cb is tuned for the case the lower level
+C API runs the callback in a different thread, possibly with a different
+scheduling priority.  see [gddo](http://godoc.org/zikichombo.org/sio/libsio#Cb)
+for details.
 
 ## Import directions
 Package zikichombo.org/sio imports the package implementing entry points 
