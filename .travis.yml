@@ -11,6 +11,11 @@ notifications:
   on_success: false
   on_failure: always
 
+before_install:
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update -q
+  - sudo apt-get install gcc-8 -y
+
 install: sudo apt-get install libasound2-dev && go get -t -x zikichombo.org/sio/...
 
 script: go test -x zikichombo.org/sio/...
