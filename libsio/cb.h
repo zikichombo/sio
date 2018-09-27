@@ -3,6 +3,7 @@
 
 #include <stdatomic.h>
 #include <stdint.h>
+#include <time.h>
 
 typedef struct Cb {
 	int bufSz;
@@ -11,6 +12,7 @@ typedef struct Cb {
 	int inF;
 	void * out;
 	int outF;
+	struct timespec time;
 } Cb;
 
 

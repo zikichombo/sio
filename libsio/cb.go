@@ -6,9 +6,11 @@ package libsio
 // #include "cb.h"
 import "C"
 import (
+	"errors"
 	"io"
 	"runtime"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"zikichombo.org/sound"
@@ -24,7 +26,7 @@ import (
 // as well:
 //
 //  1. The synchronisation mechanism here assumes that at most one C callback
-//  thread is executing a callback at a time, so as to avoid syscalls.
+//  thread is executing a callback at a time.
 //
 //  2. The C API must accept configuration by buffer size and
 //  never present the user with a buffer which exceeds this size.
@@ -35,7 +37,8 @@ import (
 //    - for input, there will be latency and CPU overhead
 //    - for output, the C API must allow the callback to inform the
 //      underlying system of the actual number of frames provided, even
-//      for non EOF conditions.
+//      for non EOF conditions.  Normally, this means the C API has
+//      latency associated with alignment.
 //
 //  4. For best reliability, the Go code should be run on a thread with the same
 //     priority as the C API.
@@ -70,17 +73,39 @@ type Cb struct {
 	// latency and cpu overhead, there is nothing that can be done as any regular alignment
 	// of bursts of irregular length data will have this effect.
 	over []float64
+
+	// time tracking
+	lastTime time.Time
+	bufDur   time.Duration
 }
 
 func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 	return &Cb{
-		Form: v,
-		sco:  sco,
-		bsz:  b,
-		il:   cil.New(v.Channels(), b),
-		over: make([]float64, b),
-		c:    C.newCb(C.int(b))}
+		Form:   v,
+		sco:    sco,
+		bsz:    b,
+		il:     cil.New(v.Channels(), b),
+		over:   make([]float64, 0, b),
+		c:      C.newCb(C.int(b)),
+		bufDur: time.Duration(b) * v.SampleRate().Period()}
 }
+
+const (
+	// amount of slack we give between ask for wake up and
+	// pseudo-spin.  guestimated for general OS scheduling
+	// latency of worst case 1 preempting task + general Go GC
+	// latency.
+	sleepSlack = 5 * time.Millisecond
+
+	// nb of times to try an atomic before defaulting to
+	// runtime.Gosched, as the later might on some systems
+	// and some circumstances invoke a syscall.
+	atomicTryLen = 10
+
+	// max number of tries before we assume something killed
+	// the C thread
+	atomicTryLim = 100000000
+)
 
 func (r *Cb) Close() error {
 	C.closeCb(r.c)
@@ -106,19 +131,28 @@ func (r *Cb) Receive(d []float64) (int, error) {
 		start = len(r.over) / nC
 		r.over = r.over[:0]
 	}
+	r.maybeSleep()
 
 	var sl []float64 // per cb subslice of d
 	addr := (*uint32)(unsafe.Pointer(&r.c.inGo))
 	bps := r.sco.Bytes()
 	var nf, onf int  // frame counter and overlap frame count
 	var cbBuf []byte // cast from C pointer callback data
+	orgTime := r.lastTime
 	for start < nF {
-		r.fromC(addr)
+		if err := r.fromC(addr); err != nil {
+			return 0, ErrCApiLost
+		}
+		if orgTime == r.lastTime {
+			r.lastTime = time.Now()
+		}
 
 		nf = int(r.c.inF)
 		if nf == 0 {
 			r.toC(addr)
-			break
+			if err := r.toC(addr); err != nil {
+				return 0, ErrCApiLost
+			}
 		}
 
 		// in case the C cb doesn't align to the buffer size
@@ -140,7 +174,9 @@ func (r *Cb) Receive(d []float64) (int, error) {
 			r.sco.Decode(r.over, cbBuf[nf*bps*nC:])
 		}
 
-		r.toC(addr)
+		if err := r.toC(addr); err != nil {
+			return 0, ErrCApiLost
+		}
 		start += nf
 	}
 
@@ -148,6 +184,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	return start, nil
 }
 
+// Send is as in sound.Sink.Send
 func (r *Cb) Send(d []float64) error {
 	N := len(d)
 	nC := r.Channels()
@@ -166,12 +203,20 @@ func (r *Cb) Send(d []float64) error {
 	bps := r.sco.Bytes()
 	var nf int
 	var cbBuf []byte
+	orgTime := r.lastTime
 	for start < nF {
-		r.fromC(addr)
+		if err := r.fromC(addr); err != nil {
+			return ErrCApiLost
+		}
+		if orgTime == r.lastTime {
+			r.lastTime = time.Now()
+		}
 		// get the slice at buffer size
 		nf = int(r.c.outF)
 		if nf == 0 {
-			r.toC(addr)
+			if err := r.toC(addr); err != nil {
+				return ErrCApiLost
+			}
 			return io.EOF
 		}
 		if start+nf > nF {
@@ -179,11 +224,13 @@ func (r *Cb) Send(d []float64) error {
 		}
 		sl = d[start*nC : (start+nf)*nC]
 		// "render"
-		cbBuf = (*[1 << 30]byte)(unsafe.Pointer(C.getIn(r.c)))[:nf*bps*nC]
+		cbBuf = (*[1 << 30]byte)(unsafe.Pointer(r.c.out))[:nf*bps*nC]
 		r.sco.Encode(cbBuf, sl)
 		// tell the API about any truncation that happened.
 		r.c.outF = C.int(nf)
-		r.toC(addr)
+		if err := r.toC(addr); err != nil {
+			return ErrCApiLost
+		}
 		start += nf
 	}
 	return nil
@@ -193,29 +240,60 @@ func (r *Cb) SendReceive(out, in []float64) (int, error) {
 	return 0, nil
 }
 
-func (r *Cb) setOutF(nf int) {
-	addr := (*uint32)(unsafe.Pointer(&r.c.outF))
-	atomic.StoreUint32(addr, uint32(nf))
-}
-
-func (r *Cb) fromC(addr *uint32) {
-	var sz uint32
-	for {
-		sz = atomic.LoadUint32(addr)
-		if sz != 0 {
-			return
-		}
-		runtime.Gosched()
+func (r *Cb) maybeSleep() {
+	var t time.Time
+	if r.lastTime == t { // don't sleep on first call.
+		return
+	}
+	// sleep a conservative amount of time if
+	// latency is high enough (see sleepSlack)
+	passed := time.Since(r.lastTime)
+	if passed+sleepSlack < r.bufDur {
+		time.Sleep(r.bufDur - (passed + sleepSlack))
 	}
 }
 
-func (r *Cb) toC(addr *uint32) {
+// ErrCApiLost can be returned if the thread running the C API
+// is somehow killed or the hardware causes the callbacks to
+// block.
+var ErrCApiLost = errors.New("too many atomic tries, C callbacks aren't happening.")
+
+func (r *Cb) fromC(addr *uint32) error {
 	var sz uint32
+	i := 0
+	for {
+		sz = atomic.LoadUint32(addr)
+		if sz != 0 {
+			return nil
+		}
+		i++
+		if i%atomicTryLen == 0 {
+			if i >= atomicTryLim {
+				return ErrCApiLost
+			}
+			// runtime.Gosched may invoke a syscall if many g's on m
+			// use sparingly
+			runtime.Gosched()
+		}
+	}
+}
+
+func (r *Cb) toC(addr *uint32) error {
+	var sz uint32
+	i := 0
 	for {
 		sz = atomic.LoadUint32(addr)
 		if atomic.CompareAndSwapUint32(addr, sz, sz-1) {
-			return
+			return nil
 		}
-		runtime.Gosched()
+		i++
+		if i%atomicTryLen == 0 {
+			if i >= atomicTryLim {
+				return ErrCApiLost
+			}
+			// runtime.Gosched may invoke a syscall if many g's on m
+			// use sparingly
+			runtime.Gosched()
+		}
 	}
 }
