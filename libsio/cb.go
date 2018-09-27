@@ -204,7 +204,7 @@ func (r *Cb) Send(d []float64) error {
 		}
 		sl = d[start*nC : (start+nf)*nC]
 		// "render"
-		cbBuf = (*[1 << 30]byte)(unsafe.Pointer(C.getIn(r.c)))[:nf*bps*nC]
+		cbBuf = (*[1 << 30]byte)(unsafe.Pointer(r.c.out))[:nf*bps*nC]
 		r.sco.Encode(cbBuf, sl)
 		// tell the API about any truncation that happened.
 		r.c.outF = C.int(nf)

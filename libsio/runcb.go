@@ -15,9 +15,10 @@ package libsio
 //     void * buf;
 //     int bf;
 //     int bpf;
+//     int input;
 // } runcb;
 //
-// runcb * newruncb(Cb *cb, int n, int bf, int bpf) {
+// runcb * newruncb(Cb *cb, int n, int bf, int bpf, int input) {
 //   runcb * rcb = (runcb *) malloc(sizeof(runcb));
 //   if (rcb == 0) {
 //       return rcb;
@@ -27,6 +28,7 @@ package libsio
 //   rcb->n = n;
 //   rcb->bf = bf;
 //   rcb->bpf = bpf;
+//   rcb->input = input;
 //   rcb->buf = malloc(bf *bpf);
 //   if (rcb->buf == 0) {
 //      free(rcb);
@@ -46,16 +48,22 @@ package libsio
 //     struct timespec sleepTime;
 //     sleepTime.tv_sec = 0;
 //     sleepTime.tv_nsec = 500000L;
+//     int of;
 //     for (int i = 0; i < rcb->n; i++) {
-//         inCb(rcb->cb, rcb->buf, rcb->bf);
+//         if (rcb->input) {
+//             inCb(rcb->cb, rcb->buf, rcb->bf);
+//         } else {
+//             of = rcb->bf;
+//             outCb(rcb->cb, rcb->buf, &of);
+//         }
 //         nanosleep(&sleepTime, NULL);
 //     }
 //     return NULL;
 // }
 //
-// int runcbs(Cb *cb, int n, int b, int bps) {
+// int runcbs(Cb *cb, int n, int b, int bps, int input) {
 //
-//    runcb * rcb = newruncb(cb, n, b, bps);
+//    runcb * rcb = newruncb(cb, n, b, bps, input);
 //    if (rcb == 0) {
 //        return -1;
 //    }
@@ -80,6 +88,9 @@ package libsio
 // }
 import "C"
 
-func runcbs(cb *Cb, n, bf, spf int) {
-	C.runcbs(cb.c, C.int(n), C.int(bf), C.int(spf))
+func runcbsCapture(cb *Cb, n, bf, spf int) {
+	C.runcbs(cb.c, C.int(n), C.int(bf), C.int(spf), 1)
+}
+func runcbsPlay(cb *Cb, n, bf, spf int) {
+	C.runcbs(cb.c, C.int(n), C.int(bf), C.int(spf), 0)
 }
