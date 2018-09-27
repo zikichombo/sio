@@ -9,6 +9,7 @@ import (
 	"io"
 	"runtime"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"zikichombo.org/sound"
@@ -70,17 +71,28 @@ type Cb struct {
 	// latency and cpu overhead, there is nothing that can be done as any regular alignment
 	// of bursts of irregular length data will have this effect.
 	over []float64
+
+	// time tracking
+	lastTime time.Time
+	bufDur   time.Duration
 }
 
 func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 	return &Cb{
-		Form: v,
-		sco:  sco,
-		bsz:  b,
-		il:   cil.New(v.Channels(), b),
-		over: make([]float64, b),
-		c:    C.newCb(C.int(b))}
+		Form:   v,
+		sco:    sco,
+		bsz:    b,
+		il:     cil.New(v.Channels(), b),
+		over:   make([]float64, b),
+		c:      C.newCb(C.int(b)),
+		bufDur: time.Duration(b) * v.SampleRate().Period()}
 }
+
+const (
+	// amount of slack we give between ask for wake up and
+	// pseudo-spin
+	sleepSlack = 3 * time.Millisecond
+)
 
 func (r *Cb) Close() error {
 	C.closeCb(r.c)
@@ -106,14 +118,19 @@ func (r *Cb) Receive(d []float64) (int, error) {
 		start = len(r.over) / nC
 		r.over = r.over[:0]
 	}
+	r.maybeSleep()
 
 	var sl []float64 // per cb subslice of d
 	addr := (*uint32)(unsafe.Pointer(&r.c.inGo))
 	bps := r.sco.Bytes()
 	var nf, onf int  // frame counter and overlap frame count
 	var cbBuf []byte // cast from C pointer callback data
+	orgTime := r.lastTime
 	for start < nF {
 		r.fromC(addr)
+		if orgTime == r.lastTime {
+			r.lastTime = time.Now()
+		}
 
 		nf = int(r.c.inF)
 		if nf == 0 {
@@ -166,8 +183,12 @@ func (r *Cb) Send(d []float64) error {
 	bps := r.sco.Bytes()
 	var nf int
 	var cbBuf []byte
+	orgTime := r.lastTime
 	for start < nF {
 		r.fromC(addr)
+		if orgTime == r.lastTime {
+			r.lastTime = time.Now()
+		}
 		// get the slice at buffer size
 		nf = int(r.c.outF)
 		if nf == 0 {
@@ -193,9 +214,15 @@ func (r *Cb) SendReceive(out, in []float64) (int, error) {
 	return 0, nil
 }
 
-func (r *Cb) setOutF(nf int) {
-	addr := (*uint32)(unsafe.Pointer(&r.c.outF))
-	atomic.StoreUint32(addr, uint32(nf))
+func (r *Cb) maybeSleep() {
+	var t time.Time
+	if r.lastTime == t { // don't sleep on first call.
+		return
+	}
+	passed := time.Since(r.lastTime)
+	if passed+sleepSlack < r.bufDur {
+		time.Sleep(r.bufDur - (passed + sleepSlack))
+	}
 }
 
 func (r *Cb) fromC(addr *uint32) {

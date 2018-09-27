@@ -44,7 +44,6 @@ int getOutF(Cb *cb) {
 
 // forward decl.
 static void toGoAndBack(Cb *cb);
-static int onF(Cb *cb);
 
 /*
  From Ian Lance Taylor: in C11 stdatomic terms Go atomic.CompareAndSwap is like
