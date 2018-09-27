@@ -268,7 +268,7 @@ func (r *Cb) fromC(addr *uint32) error {
 		}
 		i++
 		if i%atomicTryLen == 0 {
-			if i == atomicTryLim {
+			if i >= atomicTryLim {
 				return ErrCApiLost
 			}
 			// runtime.Gosched may invoke a syscall if many g's on m
@@ -288,7 +288,7 @@ func (r *Cb) toC(addr *uint32) error {
 		}
 		i++
 		if i%atomicTryLen == 0 {
-			if i == atomicTryLim {
+			if i >= atomicTryLim {
 				return ErrCApiLost
 			}
 			// runtime.Gosched may invoke a syscall if many g's on m

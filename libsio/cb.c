@@ -118,10 +118,15 @@ static void toGoAndBack(Cb *cb) {
 		if (i >= 1000 && i%50 == 0) {
 			// sleep is 1us, but involves syscall so system latency is involved.
 			// avoid as much as possible without entirely eating the CPU.
+			// TBD(wsc) make this buffer size real time dependent rather than by cycle
+			// counts.  If the buffer time is large, then we can sleep as in 
+			// cb.go, otherwise either we're in a slack time or contention is causing the 
+			// atomic to fail and it might help to back off.
 			nanosleep(&cb->time, NULL);
 		}
 	}
 	// paranoid code to reset state to as if Go was running properly
+	// equivalent of libsio.ErrCApiLost
 	fprintf(stderr, "atomic failed after 1000000 tries (resetting), did Go die?\n");
 	while (b>0) {
 		b = atomic_load_explicit(gp, memory_order_acquire);
