@@ -6,6 +6,7 @@ package libsio
 // #include "cb.h"
 import "C"
 import (
+	"errors"
 	"io"
 	"runtime"
 	"sync/atomic"
@@ -95,6 +96,15 @@ const (
 	// latency of worst case 1 preempting task + general Go GC
 	// latency.
 	sleepSlack = 5 * time.Millisecond
+
+	// nb of times to try an atomic before defaulting to
+	// runtime.Gosched, as the later might on some systems
+	// and some circumstances invoke a syscall.
+	atomicTryLen = 10
+
+	// max number of tries before we assume something killed
+	// the C thread
+	atomicTryLim = 100000000
 )
 
 func (r *Cb) Close() error {
@@ -130,7 +140,9 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	var cbBuf []byte // cast from C pointer callback data
 	orgTime := r.lastTime
 	for start < nF {
-		r.fromC(addr)
+		if err := r.fromC(addr); err != nil {
+			return 0, ErrCApiLost
+		}
 		if orgTime == r.lastTime {
 			r.lastTime = time.Now()
 		}
@@ -138,7 +150,9 @@ func (r *Cb) Receive(d []float64) (int, error) {
 		nf = int(r.c.inF)
 		if nf == 0 {
 			r.toC(addr)
-			break
+			if err := r.toC(addr); err != nil {
+				return 0, ErrCApiLost
+			}
 		}
 
 		// in case the C cb doesn't align to the buffer size
@@ -160,7 +174,9 @@ func (r *Cb) Receive(d []float64) (int, error) {
 			r.sco.Decode(r.over, cbBuf[nf*bps*nC:])
 		}
 
-		r.toC(addr)
+		if err := r.toC(addr); err != nil {
+			return 0, ErrCApiLost
+		}
 		start += nf
 	}
 
@@ -189,14 +205,18 @@ func (r *Cb) Send(d []float64) error {
 	var cbBuf []byte
 	orgTime := r.lastTime
 	for start < nF {
-		r.fromC(addr)
+		if err := r.fromC(addr); err != nil {
+			return ErrCApiLost
+		}
 		if orgTime == r.lastTime {
 			r.lastTime = time.Now()
 		}
 		// get the slice at buffer size
 		nf = int(r.c.outF)
 		if nf == 0 {
-			r.toC(addr)
+			if err := r.toC(addr); err != nil {
+				return ErrCApiLost
+			}
 			return io.EOF
 		}
 		if start+nf > nF {
@@ -208,7 +228,9 @@ func (r *Cb) Send(d []float64) error {
 		r.sco.Encode(cbBuf, sl)
 		// tell the API about any truncation that happened.
 		r.c.outF = C.int(nf)
-		r.toC(addr)
+		if err := r.toC(addr); err != nil {
+			return ErrCApiLost
+		}
 		start += nf
 	}
 	return nil
@@ -223,30 +245,55 @@ func (r *Cb) maybeSleep() {
 	if r.lastTime == t { // don't sleep on first call.
 		return
 	}
+	// sleep a conservative amount of time if
+	// latency is high enough (see sleepSlack)
 	passed := time.Since(r.lastTime)
 	if passed+sleepSlack < r.bufDur {
 		time.Sleep(r.bufDur - (passed + sleepSlack))
 	}
 }
 
-func (r *Cb) fromC(addr *uint32) {
+// ErrCApiLost can be returned if the thread running the C API
+// is somehow killed or the hardware causes the callbacks to
+// block.
+var ErrCApiLost = errors.New("too many atomic tries, C callbacks aren't happening.")
+
+func (r *Cb) fromC(addr *uint32) error {
 	var sz uint32
+	i := 0
 	for {
 		sz = atomic.LoadUint32(addr)
 		if sz != 0 {
-			return
+			return nil
 		}
-		runtime.Gosched()
+		i++
+		if i%atomicTryLen == 0 {
+			if i == atomicTryLim {
+				return ErrCApiLost
+			}
+			// runtime.Gosched may invoke a syscall if many g's on m
+			// use sparingly
+			runtime.Gosched()
+		}
 	}
 }
 
-func (r *Cb) toC(addr *uint32) {
+func (r *Cb) toC(addr *uint32) error {
 	var sz uint32
+	i := 0
 	for {
 		sz = atomic.LoadUint32(addr)
 		if atomic.CompareAndSwapUint32(addr, sz, sz-1) {
-			return
+			return nil
 		}
-		runtime.Gosched()
+		i++
+		if i%atomicTryLen == 0 {
+			if i == atomicTryLim {
+				return ErrCApiLost
+			}
+			// runtime.Gosched may invoke a syscall if many g's on m
+			// use sparingly
+			runtime.Gosched()
+		}
 	}
 }
