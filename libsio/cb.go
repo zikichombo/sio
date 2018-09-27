@@ -83,7 +83,7 @@ func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 		sco:    sco,
 		bsz:    b,
 		il:     cil.New(v.Channels(), b),
-		over:   make([]float64, b),
+		over:   make([]float64, 0, b),
 		c:      C.newCb(C.int(b)),
 		bufDur: time.Duration(b) * v.SampleRate().Period()}
 }
@@ -91,7 +91,7 @@ func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 const (
 	// amount of slack we give between ask for wake up and
 	// pseudo-spin
-	sleepSlack = 3 * time.Millisecond
+	sleepSlack = 2 * time.Millisecond
 )
 
 func (r *Cb) Close() error {

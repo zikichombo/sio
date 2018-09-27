@@ -4,6 +4,8 @@
 #include <stdatomic.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
+#include <stdio.h>
 
 #include "cb.h"
 
@@ -19,6 +21,10 @@ Cb * newCb(int bufSz) {
 
 	cb->out = 0;
 	cb->outF = 0;
+	cb->time.tv_sec = 0;
+	cb->time.tv_nsec = 1000;
+	cb->inGo = 0;
+	fprintf(stderr, "cb c addr %p inGo c addr on new: %p\n", cb, &cb->inGo);
 	return cb;
 }
 
@@ -85,7 +91,7 @@ void duplexCb(Cb *cb, void *out, int *onF, void *in, int inF) {
 
 
 static void toGoAndBack(Cb *cb) {
-	_Atomic uint32_t * gp = &cb->inGo;
+	_Atomic uint32_t * gp = &(cb->inGo);
 	uint32_t b; 
 	for (;;) {
 		b = atomic_load_explicit(gp, memory_order_acquire);
@@ -94,6 +100,7 @@ static void toGoAndBack(Cb *cb) {
 			// can't happen unless the underlying API executes callbacks
 			// on more than one thread, as anyhow the current thread
 			// is in this function (no setjmp/longjmp).
+			fprintf(stderr, "toGoAndBack: %d > 0, does the API guarantee one callback at a time?\n", b);
 			continue;
 		}
 		if (atomic_compare_exchange_weak_explicit(gp, &b, b+1, memory_order_acq_rel, memory_order_relaxed)) {
@@ -102,9 +109,23 @@ static void toGoAndBack(Cb *cb) {
 	}
 	b++;
 	uint32_t cmp;
-	for (;;) {
+	int i;
+	for (i=1; i<=1000000;i++) {
 		cmp = atomic_load_explicit(gp, memory_order_acquire);
 		if (cmp != b) {
+			return;
+		}
+		if (i >= 1000 && i%50 == 0) {
+			// sleep is 1us, but involves syscall so system latency is involved.
+			// avoid as much as possible without entirely eating the CPU.
+			nanosleep(&cb->time, NULL);
+		}
+	}
+	// paranoid code to reset state to as if Go was running properly
+	fprintf(stderr, "atomic failed after 1000000 tries (resetting), did Go die?\n");
+	while (b>0) {
+		b = atomic_load_explicit(gp, memory_order_acquire);
+		if (atomic_compare_exchange_weak_explicit(gp, &b, 0, memory_order_acq_rel, memory_order_relaxed)) {
 			break;
 		}
 	}
