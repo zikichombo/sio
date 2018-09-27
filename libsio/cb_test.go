@@ -12,7 +12,7 @@ func TestCb(t *testing.T) {
 	N := 1024
 	v := sound.MonoCd()
 	c := sample.SFloat32L
-	b := 32
+	b := 512
 	cb := NewCb(v, c, b)
 	fmt.Printf("c cb addr from go %p\n", cb.c)
 	go runcbs(cb, N, b, c.Bytes())

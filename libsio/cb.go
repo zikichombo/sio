@@ -25,7 +25,7 @@ import (
 // as well:
 //
 //  1. The synchronisation mechanism here assumes that at most one C callback
-//  thread is executing a callback at a time, so as to avoid syscalls.
+//  thread is executing a callback at a time.
 //
 //  2. The C API must accept configuration by buffer size and
 //  never present the user with a buffer which exceeds this size.
@@ -36,7 +36,8 @@ import (
 //    - for input, there will be latency and CPU overhead
 //    - for output, the C API must allow the callback to inform the
 //      underlying system of the actual number of frames provided, even
-//      for non EOF conditions.
+//      for non EOF conditions.  Normally, this means the C API has
+//      latency associated with alignment.
 //
 //  4. For best reliability, the Go code should be run on a thread with the same
 //     priority as the C API.
@@ -90,8 +91,10 @@ func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 
 const (
 	// amount of slack we give between ask for wake up and
-	// pseudo-spin
-	sleepSlack = 2 * time.Millisecond
+	// pseudo-spin.  guestimated for general OS scheduling
+	// latency of worst case 1 preempting task + general Go GC
+	// latency.
+	sleepSlack = 5 * time.Millisecond
 )
 
 func (r *Cb) Close() error {
@@ -165,6 +168,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	return start, nil
 }
 
+// Send is as in sound.Sink.Send
 func (r *Cb) Send(d []float64) error {
 	N := len(d)
 	nC := r.Channels()
