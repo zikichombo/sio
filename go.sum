@@ -1,3 +1,5 @@
+golang.org/x/mobile v0.0.0-20180922163855-920b52be609a h1:k2W7wqwJjS98b+ECJjOyWbVLFqNVTfBTbjtJ1OsVqj8=
+golang.org/x/mobile v0.0.0-20180922163855-920b52be609a/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 zikichombo.org/codec v0.0.1-alpha.2 h1:UlYFZZzxT8r+fJwZIip1jDdJow2uBff4jcXTWhjqnWY=
 zikichombo.org/codec v0.0.1-alpha.2/go.mod h1:dGcXxp+89DeQxebUtK29vL+Rqw8aFySlriptzejRHMM=
 zikichombo.org/codec v0.0.1-alpha.3 h1:g09S6DOXyO56Q3rpwHL813dwEDeNIUoFhxCOk/8sk+Q=

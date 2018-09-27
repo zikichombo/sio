@@ -79,6 +79,8 @@ type Cb struct {
 	bufDur   time.Duration
 }
 
+// NewCb creates a new Cb for the specified form (channels + sample rate)
+// sample codec and buffer size b in frames.
 func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 	return &Cb{
 		Form:   v,
@@ -236,6 +238,7 @@ func (r *Cb) Send(d []float64) error {
 	return nil
 }
 
+// TBD
 func (r *Cb) SendReceive(out, in []float64) (int, error) {
 	return 0, nil
 }
