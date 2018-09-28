@@ -1,3 +1,6 @@
+// Copyright 2018 The ZikiChombo Authors. All rights reserved.  Use of this source
+// code is governed by a license that can be found in the License file.
+
 // The goal is to synchronize between Go and C without cgo->go callback
 // on a thread created outside of go.
 #include <stdlib.h>
