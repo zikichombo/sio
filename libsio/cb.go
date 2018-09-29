@@ -23,10 +23,10 @@ import (
 
 const (
 	// amount of slack we give between ask for wake up and
-	// pseudo-spin.  guestimated for general OS scheduling
+	// pseudo-spin.  guestimated for twice general OS scheduling
 	// latency of worst case 1 preempting task + general Go GC
 	// latency.
-	sleepSlack = 5 * time.Millisecond
+	sleepSlack = 10 * time.Millisecond
 
 	// nb of times to try an atomic before defaulting to
 	// runtime.Gosched, as the later might or might not on some systems
@@ -59,6 +59,7 @@ const (
 //      underlying system of the actual number of frames provided, even
 //      for non EOF conditions.  Normally, this means the C API has
 //      latency associated with alignment.
+//    - the caller should call SetMinCbFrames before use.
 //
 //  4. For best reliability, the Go code should be run on a thread with the same
 //     priority as the C API.
@@ -84,8 +85,8 @@ type Cb struct {
 	c   *C.Cb
 	sco sample.Codec
 	bsz int // in frames
-	// zc uses channel deinterleaved for processing, most hardware uses interleaved.
-	// il provides adapter functionality.
+	// zc uses channel deinterleaved for processing, most hardware uses interleaved
+	// for i/o.  il provides adapter functionality.
 	il *cil.T
 
 	// just in case the underlying cb api gets out of sync w.r.t. buffer sizes
@@ -97,8 +98,29 @@ type Cb struct {
 	// time tracking
 	frames   int64
 	minCbf   int
-	orgTime  time.Time // time of first sample
+	orgTime  time.Time // time of first sample w.r.t. underlying API
 	frameDur time.Duration
+
+	// keep track of missed deadlines.
+	misses []MissedDeadline
+}
+
+// MissedDeadline holds information for when a deadline
+// for communication with the C API was missed.
+//
+// If the underlying C API uses buffering, then some deadlines
+// may be missed and not cause glitching.  However, if no deadlines
+// are missed, then we know we are keeping up sufficiently
+// to not cause glitching.
+//
+// We cannot be more precise than this without imposing
+// assumptions on the underlying API that may or may not hold.
+type MissedDeadline struct {
+	// frame is the number of frames exchanged with the underlying API.
+	Frame int64
+	// OffBy is how much earlier the communication would have needed
+	// to happen in order to not miss the deadline.
+	OffBy time.Duration
 }
 
 // NewCb creates a new Cb for the specified form (channels + sample rate)
@@ -113,13 +135,47 @@ func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
 		over:     make([]float64, 0, b),
 		c:        C.newCb(C.int(b)),
 		minCbf:   b,
-		frameDur: fd}
+		frameDur: fd,
+		misses:   make([]MissedDeadline, 0, 128)}
 }
 
+// Close must be called to avoid resource leakage.
 func (r *Cb) Close() error {
 	C.closeCb(r.c)
 	C.freeCb(r.c)
 	return nil
+}
+
+// LastMisses returns the slice of MissedDeadline's
+// associated with the last i/o call (amongst Send,Receive,Duplex).
+//
+// the slice is cleared on entry to to an i/o call.
+func (r *Cb) LastMisses() []MissedDeadline {
+	return r.misses
+}
+
+// LastMissed returns true if the last i/o call involved some
+// missed deadlines communicating with the underlying API.
+func (r *Cb) LastMissed() bool {
+	return len(r.misses) != 0
+}
+
+// SetMinCbFrames sets the minimum number of frames
+// exchanged with the underlying API in a callback.
+//
+// By default, this is equal to the buffer size.  As a result,
+// if the minimum number of frames exchanged is less than the
+// buffer size, it should be set with SetMinCbFrames.  A value
+// of 0 is acceptable if the value is unknown.
+//
+// This has an effect on CPU utilisation, as deadlines
+// are calculated with respect to the minimum number of
+// frames that may be exchanged with the underlying API.
+// So if the minimum is significantly less than the buffer frame size,
+// then Cb will not be able to sleep as much and will have to
+// pseudo-spin more.
+func (r *Cb) SetMinCbFrames(cbf int) {
+	r.minCbf = cbf
 }
 
 // Receive is as in sound.Source.Receive
@@ -134,6 +190,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	if nF%b != 0 {
 		return 0, sound.ErrFrameAlignment
 	}
+	r.misses = r.misses[:0]
 	start := 0
 	if len(r.over) != 0 {
 		copy(d, r.over)
@@ -203,6 +260,7 @@ func (r *Cb) Send(d []float64) error {
 	if nF%b != 0 {
 		return sound.ErrFrameAlignment
 	}
+	r.misses = r.misses[:0]
 	r.il.Inter(d)
 	start := 0
 	var sl []float64
@@ -262,11 +320,23 @@ func (r *Cb) setOrgTime(nf int) {
 // supplied buffer sizes and buffer size is bigger
 // than OS latency jitter.
 func (r *Cb) maybeSleep() {
-	if r.minCbf == 0 || r.frames == 0 {
+	if r.frames == 0 {
+		return
+	}
+	if r.minCbf == 0 {
+		trg := r.orgTime.Add(time.Duration(int64(r.bsz)+r.frames) * r.frameDur)
+		deadline := time.Until(trg)
+		if deadline < 0 {
+			r.misses = append(r.misses, MissedDeadline{r.frames, deadline})
+		}
 		return
 	}
 	trg := r.orgTime.Add(time.Duration(int64(r.minCbf)+r.frames) * r.frameDur)
 	deadline := time.Until(trg)
+	if deadline < 0 {
+		r.misses = append(r.misses, MissedDeadline{r.frames, deadline})
+		return
+	}
 	if deadline <= sleepSlack {
 		return
 	}
