@@ -1,6 +1,6 @@
 # Callbacks connecting Go and C
 
-this document contains some (still buggy) thoughts on using atomic to
+this document contains some thoughts on using atomic to
 synchronise hardware sound buffers with go slices/libsio.Packet in callback
 based sound APIs.
 
@@ -45,7 +45,7 @@ In sio, we have assumed the user may only specify the desired buffer size of
 or `out` points to, and the other part of the ringbuffer being filled or
 coordinated with the hardware or lower level API.  However, sometimes
 the ringbuffer isn't exposed and instead the callbacks are only passed 
-pointers to unspecified memory (as in AAudio).
+pointers to unspecified memory (as in AAudio,CoreAudio).
 
 Depending on the implemented mechanism, the latency between the end of the
 callback and the respective input or output may vary.  For example, if the
@@ -92,7 +92,7 @@ so that each invocation occurs on one thread.
 The Go level should be put at the same OS scheduling priority as the C thread.
 
 ## Drawbacks
-- this mechanism will involve a context switch on single core systems.  It is
+- this mechanism will involve an OS context switch on single core systems.  It is
 recommended to use it on multi-core systems.
 - this mechanism uses more threads to accomplish the same thing.
 - it may be the case that some real time timing information needs to be
