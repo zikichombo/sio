@@ -301,6 +301,12 @@ func (r *Cb) Send(d []float64) error {
 	return nil
 }
 
+// C returns a pointer to the C.Cb which does the C callbacks for
+// r.
+func (r *Cb) C() unsafe.Pointer {
+	return unsafe.Pointer(r.c)
+}
+
 // TBD
 func (r *Cb) SendReceive(out, in []float64) (int, error) {
 	return 0, nil
