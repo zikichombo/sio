@@ -5,11 +5,12 @@
 
 package libsio
 
-// #cgo CFLAGS: -std=c11
+// #cgo CFLAGS: -std=c11 -DLIBSIO
 // #include "cb.h"
 import "C"
 import (
 	"errors"
+	"fmt"
 	"io"
 	"runtime"
 	"sync/atomic"
@@ -123,6 +124,10 @@ type MissedDeadline struct {
 	OffBy time.Duration
 }
 
+func (m *MissedDeadline) String() string {
+	return fmt.Sprintf("missed frame %d by %s\n", m.Frame, m.OffBy)
+}
+
 // NewCb creates a new Cb for the specified form (channels + sample rate)
 // sample codec and buffer size b in frames.
 func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
@@ -168,7 +173,7 @@ func (r *Cb) LastMissed() bool {
 // buffer size, it should be set with SetMinCbFrames.  A value
 // of 1 is acceptable if the value is unknown.
 //
-// This has an effect on CPU utilisation, as deadlines
+// This has an effect on CPU utilisation, as sleep deadlines
 // are calculated with respect to the minimum number of
 // frames that may be exchanged with the underlying API.
 // So if the minimum is significantly less than the buffer frame size,
@@ -202,6 +207,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	bps := r.sco.Bytes()
 	var nf, onf int  // frame counter and overlap frame count
 	var cbBuf []byte // cast from C pointer callback data
+
 	for start < nF {
 		if err := r.fromC(addr); err != nil {
 			return 0, ErrCApiLost
@@ -215,8 +221,9 @@ func (r *Cb) Receive(d []float64) (int, error) {
 			}
 			return 0, io.EOF
 		}
+
 		if start == 0 && r.frames == 0 {
-			r.setOrgTime(-nf)
+			r.setOrgTime(0)
 		}
 
 		// in case the C cb doesn't align to the buffer size
@@ -243,7 +250,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 		}
 		start += nf
 		r.frames += int64(nf)
-		r.checkDeadline(r.frames)
+		r.checkDeadline(r.frames + int64(len(r.over)))
 	}
 	r.il.Deinter(d[:start*nC])
 	return start, nil
@@ -338,7 +345,8 @@ func (r *Cb) maybeSleep() {
 	time.Sleep(deadline - sleepSlack)
 }
 
-// checkDeadline checks whether r has missed a deadline according to the sample rate.
+// checkDeadline checks whether r has missed a deadline according to the sample rate
+// and the number of sample frames exchanged.
 //
 // checkDeadline only works after some samples have been exchanged with the underlying
 // API.  It is called before exchanging subsequent samples to ensure that the exchange

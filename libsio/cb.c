@@ -27,7 +27,9 @@ Cb * newCb(int bufSz) {
 	cb->time.tv_sec = 0;
 	cb->time.tv_nsec = 1000;
 	cb->inGo = 0;
-	fprintf(stderr, "cb c addr %p inGo c addr on new: %p\n", cb, &cb->inGo);
+	cb->inCb = inCb;
+	cb->outCb = outCb;
+	cb->duplexCb = duplexCb;
 	return cb;
 }
 

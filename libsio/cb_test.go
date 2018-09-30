@@ -27,6 +27,13 @@ func TestCbCapture(t *testing.T) {
 		} else if n != b {
 			t.Errorf("expected %d got %d\n", b, n)
 		}
+		if cb.LastMissed() {
+			fmt.Printf("misses:\n")
+			ms := cb.LastMisses()
+			for i := range ms {
+				fmt.Printf("\t%s\n", &ms[i])
+			}
+		}
 	}
 }
 
@@ -43,6 +50,13 @@ func TestCbPlay(t *testing.T) {
 		err := cb.Send(d)
 		if err != nil {
 			t.Error(err)
+		}
+		if cb.LastMissed() {
+			fmt.Printf("misses:\n")
+			ms := cb.LastMisses()
+			for i := range ms {
+				fmt.Printf("\t%s\n", &ms[i])
+			}
 		}
 	}
 }
