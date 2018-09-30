@@ -203,7 +203,6 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	var nf, onf int  // frame counter and overlap frame count
 	var cbBuf []byte // cast from C pointer callback data
 	for start < nF {
-		r.checkDeadline(r.frames + int64(start))
 		if err := r.fromC(addr); err != nil {
 			return 0, ErrCApiLost
 		}
@@ -244,6 +243,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 		}
 		start += nf
 		r.frames += int64(nf)
+		r.checkDeadline(r.frames)
 	}
 	r.il.Deinter(d[:start*nC])
 	return start, nil
