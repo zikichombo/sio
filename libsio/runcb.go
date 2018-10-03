@@ -52,12 +52,13 @@ package libsio
 //     sleepTime.tv_sec = 0;
 //     sleepTime.tv_nsec = 500000L;
 //     int of;
+//     Cb *cb = rcb->cb;
 //     for (int i = 0; i < rcb->n; i++) {
 //         if (rcb->input) {
-//             inCb(rcb->cb, rcb->buf, rcb->bf);
+//             cb->inCb(cb, rcb->buf, rcb->bf);
 //         } else {
 //             of = rcb->bf;
-//             outCb(rcb->cb, rcb->buf, &of);
+//             cb->outCb(cb, rcb->buf, &of);
 //         }
 //         nanosleep(&sleepTime, NULL);
 //     }

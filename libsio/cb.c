@@ -12,6 +12,11 @@
 
 #include "cb.h"
 
+// forward decl.
+static void toGoAndBack(Cb *cb);
+static void inCb(Cb *cb, void *in, int nf);
+static void outCb(Cb *cb, void *out, int *nf);
+static void duplexCb(Cb *cb, void *out, int *nf, void *in, int isz);
 
 Cb * newCb(int bufSz) {
 	Cb * cb = (Cb*) malloc(sizeof(Cb));
@@ -37,24 +42,7 @@ void freeCb(Cb *cb) {
 	free(cb);
 }
 
-void * getIn(Cb *cb) {
-	return cb->in;
-}
 
-int getInF(Cb *cb) {
-	return cb->inF;
-}
-
-void * getOut(Cb *cb) {
-	return cb->out;
-}
-
-int getOutF(Cb *cb) {
-	return cb->outF;
-}
-
-// forward decl.
-static void toGoAndBack(Cb *cb);
 
 /*
  From Ian Lance Taylor: in C11 stdatomic terms Go atomic.CompareAndSwap is like
@@ -72,20 +60,20 @@ control an airplane.  But for audio, we'll give it a shot.
  * inCb is written to be called in an audio i/o callback API, as described
  * in cb.md, for capture.
  */
-void inCb(Cb *cb, void *in, int nF) {
+static void inCb(Cb *cb, void *in, int nF) {
 	cb->in = in;
 	cb->inF = nF;
 	toGoAndBack(cb);
 }
 
-void outCb(Cb *cb, void *out, int *nF) {
+static void outCb(Cb *cb, void *out, int *nF) {
 	cb->out = out;
 	cb->outF = *nF;
 	toGoAndBack(cb);
 	*nF = cb->outF;
 }
 
-void duplexCb(Cb *cb, void *out, int *onF, void *in, int inF) {
+static void duplexCb(Cb *cb, void *out, int *onF, void *in, int inF) {
 	cb->in = in;
 	cb->inF = inF;
 	cb->out = out;

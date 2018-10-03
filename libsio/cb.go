@@ -124,6 +124,7 @@ type MissedDeadline struct {
 	OffBy time.Duration
 }
 
+// String for convenience.
 func (m *MissedDeadline) String() string {
 	return fmt.Sprintf("missed frame %d by %s\n", m.Frame, m.OffBy)
 }

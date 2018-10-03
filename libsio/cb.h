@@ -39,15 +39,6 @@ Cb * newCb(int bufSz);
 void freeCb(Cb *cb);
 void closeCb(Cb *cb);
 
-void * getIn(Cb *cb);
-int getInF(Cb *cb);
-void * getOut(Cb *cb);
-int getOutF(Cb *cb);
-
-
-void inCb(Cb *cb, void *in, int nf);
-void outCb(Cb *cb, void *out, int *nf);
-void duplexCb(Cb *cb, void *out, int *nf, void *in, int isz);
 #endif
 
 
