@@ -19,6 +19,9 @@ import (
 
 // #cgo LDFLAGS: -framework CoreServices -framework CoreAudio -framework AudioToolbox
 //
+// #include "../../libsio/cb.h"
+// #include "au_darwin.h"
+//
 // #include <CoreAudio/CoreAudio.h>
 // #include <CoreServices/CoreServices.h>
 // #include <AudioToolbox/AudioComponent.h>
@@ -28,15 +31,15 @@ import (
 import "C"
 
 type auhal struct {
-	u     C.AudioUnit
-	dev   *libsio.Dev
-	iom   libsio.IoMode
-	form  sound.Form
-	codec sample.Codec
-	bufSz int
-}
-
-type bus struct {
+	*libsio.Cb
+	u       C.AudioUnit
+	thunk   *C.HalThunk
+	dev     *libsio.Dev
+	iom     libsio.IoMode
+	form    sound.Form
+	codec   sample.Codec
+	bufSz   int
+	started bool
 }
 
 func newAuio(dev *libsio.Dev, iom libsio.IoMode, v sound.Form, co sample.Codec, bufSz int) (*auhal, error) {
@@ -58,7 +61,7 @@ func newAuio(dev *libsio.Dev, iom libsio.IoMode, v sound.Form, co sample.Codec, 
 		log.Printf("error instantiating I/O unit: %s\n", err)
 		return nil, err
 	}
-	res := &auhal{u: u, iom: iom, form: v, codec: co}
+	res := &auhal{Cb: libsio.NewCb(v, co, bufSz), u: u, iom: iom, form: v, codec: co}
 	if err := res.enableIO(); err != nil {
 		return nil, err
 	}
@@ -71,6 +74,14 @@ func newAuio(dev *libsio.Dev, iom libsio.IoMode, v sound.Form, co sample.Codec, 
 	if err := res.allocBufs(bufSz); err != nil {
 		return nil, err
 	}
+	res.thunk = C.newHalThunk(res.u, (*C.Cb)(res.Cb.C()), C.int(v.Channels()), C.int(bufSz), C.int(co.Bytes()))
+	if res.thunk == nil {
+		return nil, fmt.Errorf("oom")
+	}
+	if err := res.setCb(); err != nil {
+		return nil, err
+	}
+
 	st = C.AudioUnitInitialize(u)
 	if err := caStatus(st); err != nil {
 		log.Printf("error instantiating I/O unit: %s\n", err)
@@ -167,20 +178,43 @@ func (u *auhal) setFormats(v sound.Form, co sample.Codec) error {
 
 func (u *auhal) allocBufs(bufSz int) error {
 	sz := C.uint(C.sizeof_UInt32)
-	var frames C.UInt32
+	var frames = C.UInt32(bufSz)
 	if u.iom.Outputs() {
-		st := C.AudioUnitGetProperty(u.u, C.kAudioDevicePropertyBufferFrameSize,
-			C.kAudioUnitScope_Global, 0, unsafe.Pointer(&frames), &sz)
+		st := C.AudioUnitSetProperty(u.u, C.kAudioDevicePropertyBufferFrameSize,
+			C.kAudioUnitScope_Output, 0, unsafe.Pointer(&frames), sz)
 		if err := caStatus(st); err != nil {
 			return err
 		}
 	}
 	if u.iom.Inputs() {
-		st := C.AudioUnitGetProperty(u.u, C.kAudioDevicePropertyBufferFrameSize,
-			C.kAudioUnitScope_Global, 1, unsafe.Pointer(&frames), &sz)
+		st := C.AudioUnitSetProperty(u.u, C.kAudioDevicePropertyBufferFrameSize,
+			C.kAudioUnitScope_Input, 1, unsafe.Pointer(&frames), sz)
 		if err := caStatus(st); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (u *auhal) setCb() error {
+	switch u.iom {
+	case libsio.InputMode:
+		st := C.setCbIn(u.thunk)
+		if err := caStatus(st); err != nil {
+			return err
+		}
+	case libsio.OutputMode:
+		st := C.setCbOut(u.thunk)
+		if err := caStatus(st); err != nil {
+			return err
+		}
+	case libsio.DuplexMode:
+		st := C.setCbDuplex(u.thunk)
+		if err := caStatus(st); err != nil {
+			return err
+		}
+	default:
+		panic("unreachable")
 	}
 	return nil
 }
@@ -198,5 +232,32 @@ func (u *auhal) Close() error {
 	if err := caStatus(st); err != nil {
 		return err
 	}
+	C.freeHalThunk(u.thunk)
 	return nil
+}
+
+func (u *auhal) start() error {
+	if u.started {
+		return nil
+	}
+	st := C.AudioOutputUnitStart(u.u)
+	err := caStatus(st)
+	if err != nil {
+		u.started = true
+	}
+	return err
+}
+
+func (u *auhal) Send(d []float64) error {
+	if err := u.start(); err != nil {
+		return err
+	}
+	return u.Cb.Send(d)
+}
+
+func (u *auhal) Receive(d []float64) (int, error) {
+	if err := u.start(); err != nil {
+		return 0, err
+	}
+	return u.Cb.Receive(d)
 }

@@ -5,11 +5,12 @@
 
 package libsio
 
-// #cgo CFLAGS: -std=c11
+// #cgo CFLAGS: -std=c11 -DLIBSIO
 // #include "cb.h"
 import "C"
 import (
 	"errors"
+	"fmt"
 	"io"
 	"runtime"
 	"sync/atomic"
@@ -123,6 +124,11 @@ type MissedDeadline struct {
 	OffBy time.Duration
 }
 
+// String for convenience.
+func (m *MissedDeadline) String() string {
+	return fmt.Sprintf("missed frame %d by %s\n", m.Frame, m.OffBy)
+}
+
 // NewCb creates a new Cb for the specified form (channels + sample rate)
 // sample codec and buffer size b in frames.
 func NewCb(v sound.Form, sco sample.Codec, b int) *Cb {
@@ -166,9 +172,9 @@ func (r *Cb) LastMissed() bool {
 // By default, this is equal to the buffer size.  As a result,
 // if the minimum number of frames exchanged is less than the
 // buffer size, it should be set with SetMinCbFrames.  A value
-// of 0 is acceptable if the value is unknown.
+// of 1 is acceptable if the value is unknown.
 //
-// This has an effect on CPU utilisation, as deadlines
+// This has an effect on CPU utilisation, as sleep deadlines
 // are calculated with respect to the minimum number of
 // frames that may be exchanged with the underlying API.
 // So if the minimum is significantly less than the buffer frame size,
@@ -202,6 +208,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 	bps := r.sco.Bytes()
 	var nf, onf int  // frame counter and overlap frame count
 	var cbBuf []byte // cast from C pointer callback data
+
 	for start < nF {
 		if err := r.fromC(addr); err != nil {
 			return 0, ErrCApiLost
@@ -215,8 +222,9 @@ func (r *Cb) Receive(d []float64) (int, error) {
 			}
 			return 0, io.EOF
 		}
+
 		if start == 0 && r.frames == 0 {
-			r.setOrgTime(-nf)
+			r.setOrgTime(0)
 		}
 
 		// in case the C cb doesn't align to the buffer size
@@ -243,6 +251,7 @@ func (r *Cb) Receive(d []float64) (int, error) {
 		}
 		start += nf
 		r.frames += int64(nf)
+		r.checkDeadline(r.frames + int64(len(r.over)))
 	}
 	r.il.Deinter(d[:start*nC])
 	return start, nil
@@ -269,6 +278,7 @@ func (r *Cb) Send(d []float64) error {
 	var nf int
 	var cbBuf []byte
 	for start < nF {
+		r.checkDeadline(r.frames)
 		if err := r.fromC(addr); err != nil {
 			return ErrCApiLost
 		}
@@ -295,10 +305,16 @@ func (r *Cb) Send(d []float64) error {
 		if err := r.toC(addr); err != nil {
 			return ErrCApiLost
 		}
-		start += nf
 		r.frames += int64(nf)
+		start += nf
 	}
 	return nil
+}
+
+// C returns a pointer to the C.Cb which does the C callbacks for
+// r.
+func (r *Cb) C() unsafe.Pointer {
+	return unsafe.Pointer(r.c)
 }
 
 // TBD
@@ -316,31 +332,40 @@ func (r *Cb) setOrgTime(nf int) {
 	r.orgTime = time.Now().Add(d)
 }
 
-// sleep only if underlying API is regular w.r.t.
-// supplied buffer sizes and buffer size is bigger
-// than OS latency jitter.
+// maybeSleep sleeps only if the minimum buffer size is bigger than estimated
+// OS latency jitter.  see sleepSlack above.
 func (r *Cb) maybeSleep() {
 	if r.frames == 0 {
 		return
 	}
-	if r.minCbf == 0 {
-		trg := r.orgTime.Add(time.Duration(int64(r.bsz)+r.frames) * r.frameDur)
-		deadline := time.Until(trg)
-		if deadline < 0 {
-			r.misses = append(r.misses, MissedDeadline{r.frames, deadline})
-		}
-		return
-	}
-	trg := r.orgTime.Add(time.Duration(int64(r.minCbf)+r.frames) * r.frameDur)
+	trg := r.orgTime.Add(time.Duration(int64(r.bsz)+r.frames) * r.frameDur)
 	deadline := time.Until(trg)
-	if deadline < 0 {
-		r.misses = append(r.misses, MissedDeadline{r.frames, deadline})
-		return
-	}
 	if deadline <= sleepSlack {
 		return
 	}
 	time.Sleep(deadline - sleepSlack)
+}
+
+// checkDeadline checks whether r has missed a deadline according to the sample rate
+// and the number of sample frames exchanged.
+//
+// checkDeadline only works after some samples have been exchanged with the underlying
+// API.  It is called before exchanging subsequent samples to ensure that the exchange
+// occurs before the real time represented by previously exchanged samples.
+//
+// Since the underlying API may allow us be late from time to time like this, a missed
+// deadline does not necessarily imply that we have caused glitching.   No missed
+// deadlines does imply the underlying API should have the opportunity to proceed
+// without glitching.
+func (r *Cb) checkDeadline(nf int64) {
+	if r.frames == 0 {
+		return
+	}
+	trg := r.orgTime.Add(time.Duration(nf+1) * r.frameDur)
+	deadline := time.Until(trg)
+	if deadline < 0 {
+		r.misses = append(r.misses, MissedDeadline{nf, -deadline})
+	}
 }
 
 // ErrCApiLost can be returned if the thread running the C API
