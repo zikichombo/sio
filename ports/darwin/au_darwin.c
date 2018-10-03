@@ -27,7 +27,6 @@ void freeHalThunk(HalThunk *t) {
 	free(t);
 }
 
-
 OSStatus inputHalCallback(
 		void *clientData,
 		AudioUnitRenderActionFlags *flags,
@@ -41,7 +40,8 @@ OSStatus inputHalCallback(
 	if (st != 0) {
 		return st;
 	}
-	inCb(thunk->cb, thunk->ioBuf.mBuffers[0].mData, (int)inFrames);
+	Cb *cb = thunk->cb;
+	cb->inCb(cb, thunk->ioBuf.mBuffers[0].mData, (int)inFrames);
 	return 0;
 }
 
@@ -58,7 +58,8 @@ OSStatus outputHalCallback(
 	// w.r.t. thunk->cb expected frame size, thus we don't need to pay
 	// attention to the value of inf after the call.
 	int of = (int)inFrames;
-	outCb(thunk->cb, ioData->mBuffers[0].mData, &of);
+	Cb *cb = thunk->cb;
+	cb->outCb(cb, thunk->ioBuf.mBuffers[0].mData, &of);
 	return 0;
 }
 
@@ -79,7 +80,8 @@ OSStatus duplexHalCallback(
 	// w.r.t. thunk->cb expected frame size, thus we don't need to pay
 	// attention to the value of inf after the call.
 	int inf = (int)inFrames;
-	duplexCb(thunk->cb, ioData->mBuffers[0].mData, &inf, thunk->ioBuf.mBuffers[0].mData, inf);
+	Cb *cb = thunk->cb;
+	cb->duplexCb(cb, ioData->mBuffers[0].mData, &inf, thunk->ioBuf.mBuffers[0].mData, inf);
 	return 0;
 }
 

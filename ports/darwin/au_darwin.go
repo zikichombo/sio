@@ -19,7 +19,7 @@ import (
 
 // #cgo LDFLAGS: -framework CoreServices -framework CoreAudio -framework AudioToolbox
 //
-// #include "../../libsio/cb_extern.h"
+// #include "../../libsio/cb.h"
 // #include "au_darwin.h"
 //
 // #include <CoreAudio/CoreAudio.h>
@@ -241,7 +241,11 @@ func (u *auhal) start() error {
 		return nil
 	}
 	st := C.AudioOutputUnitStart(u.u)
-	return caStatus(st)
+	err := caStatus(st)
+	if err != nil {
+		u.started = true
+	}
+	return err
 }
 
 func (u *auhal) Send(d []float64) error {

@@ -7,7 +7,7 @@
 #include <AudioToolbox/AudioUnit.h>
 #include <CoreAudio/CoreAudio.h>
 
-#include "../../libsio/cb_extern.h" // in sio/libsio, CFLAGS set in au_darwin.go import "C" preamble
+#include "../../libsio/cb.h" 
 
 typedef struct HalThunk {
 	AudioUnit au;
@@ -21,6 +21,5 @@ void freeHalThunk(HalThunk *t);
 OSStatus setCbIn(HalThunk *t);
 OSStatus setCbOut(HalThunk *t);
 OSStatus setCbDuplex(HalThunk *t);
-
 
 #endif
