@@ -4,9 +4,9 @@
 package sio
 
 import (
-	"zikichombo.org/sio/host"
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sio/host"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/sample"
 )
 
 // Capture tries to open the default capture device with

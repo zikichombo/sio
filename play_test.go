@@ -1,3 +1,4 @@
+//go:build listen
 // +build listen
 
 package sio_test
@@ -6,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"zikichombo.org/sio"
-	"zikichombo.org/sound/freq"
-	"zikichombo.org/sound/gen"
-	"zikichombo.org/sound/ops"
+	"github.com/zikichombo/sio"
+	"github.com/zikichombo/sound/freq"
+	"github.com/zikichombo/sound/gen"
+	"github.com/zikichombo/sound/ops"
 )
 
 func TestPlay(t *testing.T) {

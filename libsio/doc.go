@@ -3,5 +3,4 @@
 
 // Package libsio provides some support for implementing the different ports.
 //
-// Package libsio is part of http://zikichombo.org
-package libsio /* import "zikichombo.org/sio/libsio" */
+package libsio

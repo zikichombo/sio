@@ -3,4 +3,4 @@
 
 package sio
 
-import _ "zikichombo.org/sio/ports/android"
+import _ "github.com/zikichombo/sio/ports/android"

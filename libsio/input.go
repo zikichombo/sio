@@ -9,7 +9,7 @@ package libsio
 import (
 	"io"
 
-	"zikichombo.org/sound"
+	"github.com/zikichombo/sound"
 )
 
 // Input encapsulates input from a device.

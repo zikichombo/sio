@@ -6,7 +6,7 @@ package libsio
 import (
 	"errors"
 
-	"zikichombo.org/sound"
+	"github.com/zikichombo/sound"
 )
 
 // Output encapsulates an output device such as to a speaker.

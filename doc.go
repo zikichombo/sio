@@ -13,4 +13,4 @@
 //
 // You are welcome to join the discussion and help us meet this goal at
 // http://github.com/zikichombo/sio
-package sio /* import "zikichombo.org/sio" */
+package sio

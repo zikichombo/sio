@@ -1,8 +1,8 @@
 // Copyright 2018 The ZikiChombo Authors. All rights reserved.  Use of this source
 // code is governed by a license that can be found in the License file.
 
-// +build linux
-// +build cgo
+//go:build linux && cgo
+// +build linux,cgo
 
 package linux
 
@@ -14,10 +14,10 @@ import (
 	"time"
 	"unsafe"
 
-	"zikichombo.org/sio/libsio"
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/freq"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sio/libsio"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/freq"
+	"github.com/zikichombo/sound/sample"
 )
 
 // #cgo pkg-config: alsa

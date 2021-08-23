@@ -3,4 +3,4 @@
 
 package sio
 
-import _ "zikichombo.org/sio/ports/darwin"
+import _ "github.com/zikichombo/sio/ports/darwin"

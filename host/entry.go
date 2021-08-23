@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"zikichombo.org/sio/libsio"
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/ops"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sio/libsio"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/ops"
+	"github.com/zikichombo/sound/sample"
 )
 
 // Entry is the type of a connection to host sound I/O capabilities.

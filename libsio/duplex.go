@@ -3,7 +3,7 @@
 
 package libsio
 
-import "zikichombo.org/sound"
+import "github.com/zikichombo/sound"
 
 type Duplex interface {
 	sound.Form

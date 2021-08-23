@@ -3,5 +3,4 @@
 
 // Package darwin zc sound/io entry points.
 //
-// Package darwin is part of http://zikichombo.org
-package darwin /* import "zikichombo.org/sio/ports/darwin" */
+package darwin

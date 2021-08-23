@@ -1,12 +1,12 @@
 // Copyright 2018 The ZikiChombo Authors. All rights reserved.  Use of this source
 // code is governed by a license that can be found in the License file.
 
-// +build linux
-// +build cgo
+//go:build linux && cgo
+// +build linux,cgo
 
 package linux
 
-import "zikichombo.org/sound/sample"
+import "github.com/zikichombo/sound/sample"
 
 // #cgo pkg-config: alsa
 // #include "alsa/asoundlib.h"

@@ -3,4 +3,4 @@
 
 package sio
 
-import _ "zikichombo.org/sio/ports/windows"
+import _ "github.com/zikichombo/sio/ports/windows"

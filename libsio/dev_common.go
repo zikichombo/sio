@@ -6,9 +6,9 @@ package libsio
 import (
 	"fmt"
 
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/freq"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/freq"
+	"github.com/zikichombo/sound/sample"
 )
 
 // Dev provides data about an sound device to connect to

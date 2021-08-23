@@ -3,9 +3,9 @@ package host
 import (
 	"time"
 
-	"zikichombo.org/sio/libsio"
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sio/libsio"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/sample"
 )
 
 // NullEntry is an entry which implements nothing and

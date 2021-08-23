@@ -3,5 +3,4 @@
 
 // Package host provides host sound entry point support.
 //
-// Package host is part of http://zikichombo.org
-package host /* import "zikichombo.org/sio/host" */
+package host

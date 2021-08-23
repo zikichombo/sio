@@ -3,4 +3,4 @@
 
 package sio
 
-import _ "zikichombo.org/sio/ports/freebsd"
+import _ "github.com/zikichombo/sio/ports/freebsd"

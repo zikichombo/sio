@@ -1,6 +1,5 @@
-module zikichombo.org/sio
+module github.com/zikichombo/sio
 
-require (
-	zikichombo.org/codec v0.0.1-alpha.3
-	zikichombo.org/sound v0.1.1-alpha.2
-)
+go 1.17
+
+require github.com/zikichombo/sound v0.2.1 // indirect

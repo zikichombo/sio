@@ -8,9 +8,9 @@ import (
 	"sync"
 	"unsafe"
 
-	"zikichombo.org/sio/libsio"
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sio/libsio"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework AudioToolbox -framework CoreFoundation

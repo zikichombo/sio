@@ -1,8 +1,8 @@
 // Copyright 2018 The ZikiChombo Authors. All rights reserved.  Use of this source
 // code is governed by a license that can be found in the License file.
 
-// +build darwin
-// +build cgo
+//go:build darwin && cgo
+// +build darwin,cgo
 
 package darwin
 
@@ -12,9 +12,9 @@ import (
 	"math"
 	"unsafe"
 
-	"zikichombo.org/sio/libsio"
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sio/libsio"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/sample"
 )
 
 // #cgo LDFLAGS: -framework CoreServices -framework CoreAudio -framework AudioToolbox

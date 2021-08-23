@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"zikichombo.org/sound"
-	"zikichombo.org/sound/sample"
+	"github.com/zikichombo/sound"
+	"github.com/zikichombo/sound/sample"
 )
 
 func TestCbCapture(t *testing.T) {

@@ -3,4 +3,4 @@
 
 package sio
 
-import _ "zikichombo.org/sio/ports/plan9"
+import _ "github.com/zikichombo/sio/ports/plan9"
